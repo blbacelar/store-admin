@@ -1,21 +1,37 @@
 import { google } from 'googleapis';
 import path from 'path';
+import fs from 'fs';
 
 // SCOPES for reading and writing to Google Sheets
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
-
-// Option 1: Load from 'credentials.json' file
-const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
 // Your Google Sheet ID - Needs to be configured
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '';
 
 export async function getAuthClient() {
-    const auth = new google.auth.GoogleAuth({
-        keyFile: CREDENTIALS_PATH,
-        scopes: SCOPES,
-    });
-    return await auth.getClient();
+    // Option 1: Use environment variables (for Vercel/production)
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+                private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            },
+            scopes: SCOPES,
+        });
+        return await auth.getClient();
+    }
+
+    // Option 2: Use credentials.json file (for local development)
+    const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
+    if (fs.existsSync(CREDENTIALS_PATH)) {
+        const auth = new google.auth.GoogleAuth({
+            keyFile: CREDENTIALS_PATH,
+            scopes: SCOPES,
+        });
+        return await auth.getClient();
+    }
+
+    throw new Error('No Google credentials found. Please set environment variables or add credentials.json');
 }
 
 export async function getGoogleSheetClient() {
