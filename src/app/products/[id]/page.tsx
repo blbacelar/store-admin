@@ -6,12 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ExternalLink, Loader2, Tag, Package, Edit, Save, X } from 'lucide-react';
 
+interface Category {
+    id: string;
+    name: string;
+}
+
 interface Product {
-    id: number;
+    id: string;
     sheetId: string;
     title: string;
     price: string;
     category: string;
+    categoryId?: string; // Add categoryId
     image: string;
     url: string;
 }
@@ -25,7 +31,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [editedTitle, setEditedTitle] = useState('');
-    const [editedCategory, setEditedCategory] = useState('');
+    const [editedCategoryId, setEditedCategoryId] = useState('');
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [creatingCategoryLoading, setCreatingCategoryLoading] = useState(false);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -37,7 +47,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 const data = await res.json();
                 setProduct(data);
                 setEditedTitle(data.title);
-                setEditedCategory(data.category);
+                setEditedCategoryId(data.categoryId || '');
             } catch (err: any) {
                 setError(err.message || 'Failed to load product');
             } finally {
@@ -45,7 +55,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             }
         };
 
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch('/api/categories');
+                if (res.ok) {
+                    const data = await res.json();
+                    setCategories(data);
+                }
+            } catch (err) {
+                console.error('Failed to load categories', err);
+            }
+        };
+
         fetchProduct();
+        fetchCategories();
     }, [resolvedParams.id]);
 
     const handleEdit = () => {
@@ -56,7 +79,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setIsEditing(false);
         if (product) {
             setEditedTitle(product.title);
-            setEditedCategory(product.category);
+            setEditedCategoryId(product.categoryId || '');
+            setIsCreatingCategory(false);
+            setNewCategoryName('');
         }
     };
 
@@ -70,7 +95,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: editedTitle,
-                    category: editedCategory
+                    categoryId: editedCategoryId // Send categoryId
                 })
             });
 
@@ -78,11 +103,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 throw new Error('Failed to update product');
             }
 
+            // Find category name for display logic update
+            const newCategoryName = categories.find(c => c.id === editedCategoryId)?.name || 'Uncategorized';
+
             // Update local state
             setProduct({
                 ...product,
                 title: editedTitle,
-                category: editedCategory
+                categoryId: editedCategoryId,
+                category: newCategoryName
             });
             setIsEditing(false);
         } catch (err: any) {
@@ -212,10 +241,75 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <div>
                                     <h3 className="text-sm font-medium text-muted-foreground mb-2">Category</h3>
                                     {isEditing ? (
-                                        <Input
-                                            value={editedCategory}
-                                            onChange={(e) => setEditedCategory(e.target.value)}
-                                        />
+                                        <div className="space-y-2">
+                                            {isCreatingCategory ? (
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        value={newCategoryName}
+                                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                                        placeholder="New Category Name"
+                                                        className="h-9"
+                                                    />
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={async () => {
+                                                            if (!newCategoryName.trim()) return;
+                                                            setCreatingCategoryLoading(true);
+                                                            try {
+                                                                const res = await fetch('/api/categories', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ name: newCategoryName })
+                                                                });
+                                                                if (res.ok) {
+                                                                    const newCat = await res.json();
+                                                                    setCategories(prev => [...prev, newCat]);
+                                                                    setEditedCategoryId(newCat.id);
+                                                                    setIsCreatingCategory(false);
+                                                                    setNewCategoryName('');
+                                                                }
+                                                            } catch (e) {
+                                                                console.error("Failed to create category", e);
+                                                            } finally {
+                                                                setCreatingCategoryLoading(false);
+                                                            }
+                                                        }}
+                                                        disabled={creatingCategoryLoading}
+                                                    >
+                                                        {creatingCategoryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => setIsCreatingCategory(false)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                        value={editedCategoryId}
+                                                        onChange={(e) => setEditedCategoryId(e.target.value)}
+                                                    >
+                                                        <option value="">Select Category...</option>
+                                                        {categories.map(c => (
+                                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => setIsCreatingCategory(true)}
+                                                        title="Create New Category"
+                                                    >
+                                                        <Tag className="h-4 w-4 mr-1" />
+                                                        New
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
                                     ) : (
                                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
                                             <Tag className="h-4 w-4" />
@@ -253,7 +347,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b">
                                     <span className="text-muted-foreground">Category</span>
-                                    <span className="font-medium">{isEditing ? editedCategory : product.category || 'Uncategorized'}</span>
+                                    <span className="font-medium">
+                                        {isEditing
+                                            ? (categories.find(c => c.id === editedCategoryId)?.name || 'Uncategorized')
+                                            : (product.category || 'Uncategorized')
+                                        }
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-center py-2">
                                     <span className="text-muted-foreground">Product ID</span>

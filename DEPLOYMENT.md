@@ -6,15 +6,14 @@ This guide will help you deploy the Amazon Product Automator to Vercel.
 
 1. A Vercel account (sign up at https://vercel.com)
 2. Your Google Service Account credentials from `credentials.json`
-3. Your Google Sheets ID
+3. Your MongoDB Connection String
 
 ## Step-by-Step Deployment
 
 ### 1. Prepare Your Credentials
 
-Open your `credentials.json` file and extract the following values:
-- `client_email` → This will be `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-- `private_key` → This will be `GOOGLE_PRIVATE_KEY`
+Open your `.env` file and verify your `DATABASE_URL` is set.
+For Vercel, you will need to add this environment variable.
 
 ### 2. Deploy to Vercel
 

@@ -51,7 +51,7 @@ export default function Home() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const res = await fetch(`/api/products?index=${id}`, {
         method: 'DELETE',

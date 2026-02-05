@@ -26,7 +26,7 @@ import {
 import { Trash2, Edit, EyeOff, Eye, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 interface Product {
-    id: number;
+    id: string;
     sheetId: string;
     title: string;
     price: string;
@@ -38,7 +38,7 @@ interface Product {
 
 interface ProductListProps {
     products: Product[];
-    onDelete: (id: number) => void;
+    onDelete: (id: string) => void;
     onRefresh: () => void;
 }
 
@@ -80,7 +80,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
         setCurrentPage(1);
     }, [searchQuery]);
 
-    const handleArchive = async (id: number, currentArchived: boolean) => {
+    const handleArchive = async (id: string, currentArchived: boolean) => {
         const newArchivedState = !currentArchived;
 
         // Optimistic update - update UI immediately
@@ -152,9 +152,10 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
             // Revert the optimistic update on error
             setLocalProducts(prevProducts => {
                 // Re-insert the product at its original position
-                const newProducts = [...prevProducts];
-                newProducts.splice(deletedProduct.id, 0, deletedProduct);
-                return newProducts;
+                // Note: With string IDs, exact original index position restoration is tricky without knowing it.
+                // Simplified: just add it back and let sort handle it or simple append.
+                // Better: filtered out, now add back.
+                return [...prevProducts, deletedProduct];
             });
             alert('Failed to delete product. Please try again.');
         }
