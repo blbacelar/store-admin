@@ -42,6 +42,11 @@ export default function CategoriesPage() {
     const [newCategory, setNewCategory] = useState('');
     const [addLoading, setAddLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const fetchCategories = async () => {
         try {
@@ -59,6 +64,7 @@ export default function CategoriesPage() {
     };
 
     useEffect(() => {
+        setMounted(true);
         fetchCategories();
     }, []);
 
@@ -109,13 +115,13 @@ export default function CategoriesPage() {
             <div className="max-w-4xl mx-auto space-y-8">
                 <header className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-primary">{t('manage_categories')}</h1>
-                        <p className="text-muted-foreground">{t('manage_categories_sub')}</p>
+                        <h1 className="text-3xl font-bold text-primary">{mounted ? t('manage_categories') : 'Manage Categories'}</h1>
+                        <p className="text-muted-foreground">{mounted ? t('manage_categories_sub') : 'Add or remove product categories'}</p>
                     </div>
                     <Link href="/">
                         <Button variant="outline">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            {t('back_dashboard')}
+                            {mounted ? t('back_dashboard') : 'Back to Dashboard'}
                         </Button>
                     </Link>
                 </header>
@@ -123,14 +129,14 @@ export default function CategoriesPage() {
                 <div className="bg-card rounded-lg border shadow-sm p-6">
                     <div className="flex gap-4 mb-8">
                         <Input
-                            placeholder={t('new_category_placeholder')}
+                            placeholder={mounted ? t('new_category_placeholder') : 'New category name...'}
                             value={newCategory}
                             onChange={(e) => setNewCategory(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                         />
                         <Button onClick={handleAdd} disabled={addLoading || !newCategory.trim()}>
                             {addLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <Plus className="h-4 w-4 mr-2" />}
-                            {t('add')}
+                            {mounted ? t('add') : 'Add'}
                         </Button>
                     </div>
 
@@ -148,15 +154,15 @@ export default function CategoriesPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>{t('name_label')}</TableHead>
-                                    <TableHead className="w-[100px] text-right">{t('actions_label')}</TableHead>
+                                    <TableHead>{mounted ? t('name_label') : 'Name'}</TableHead>
+                                    <TableHead className="w-[100px] text-right">{mounted ? t('actions_label') : 'Actions'}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {categories.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={2} className="text-center text-muted-foreground h-24">
-                                            {t('no_categories')}
+                                            {mounted ? t('no_categories') : 'No categories found.'}
                                         </TableCell>
                                     </TableRow>
                                 ) : (

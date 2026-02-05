@@ -13,6 +13,12 @@ export default function Home() {
   const { t } = useTranslation();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchProducts();
+  }, []);
 
   // Fetch products
   const fetchProducts = async () => {
@@ -33,10 +39,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
 
   const handleAdd = async (product: any) => {
     try {
@@ -85,14 +87,14 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
-                {t('dashboard_title')}
+                {mounted ? t('dashboard_title') : 'Amazon Admin'}
               </h1>
               <p className="text-muted-foreground text-lg mt-2 font-medium">
-                {t('dashboard_sub')}
+                {mounted ? t('dashboard_sub') : 'Automate your product tracking workflow'}
               </p>
               <div className="mt-6">
                 <Link href="/categories">
-                  <Button variant="outline">{t('manage_categories')}</Button>
+                  <Button variant="outline">{mounted ? t('manage_categories') : 'Manage Categories'}</Button>
                 </Link>
               </div>
             </div>
@@ -104,7 +106,7 @@ export default function Home() {
             {loading ? (
               <div className="flex flex-col items-center justify-center p-12 space-y-4 text-muted-foreground">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p>{t('loading_products')}</p>
+                <p>{mounted ? t('loading_products') : 'Loading products...'}</p>
               </div>
             ) : (
               <ProductList products={products} onDelete={handleDelete} onRefresh={fetchProducts} />

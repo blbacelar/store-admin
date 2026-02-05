@@ -38,6 +38,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [creatingCategoryLoading, setCreatingCategoryLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -129,7 +134,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <div className="max-w-4xl mx-auto">
                     <div className="flex flex-col items-center justify-center p-12 space-y-4 text-muted-foreground">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <p>{t('loading_products')}</p>
+                        <p>{mounted ? t('loading_products') : 'Loading products...'}</p>
                     </div>
                 </div>
             </main>
@@ -146,11 +151,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         className="mb-6"
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        {t('back_dashboard')}
+                        {mounted ? t('back_dashboard') : 'Back to Dashboard'}
                     </Button>
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center p-12 text-muted-foreground">
-                            <p className="text-destructive">{error || t('no_products')}</p>
+                            <p className="text-destructive">{error || (mounted ? t('no_products') : 'Product not found')}</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -167,23 +172,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         onClick={() => router.push('/')}
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        {t('back_dashboard')}
+                        {mounted ? t('back_dashboard') : 'Back to Dashboard'}
                     </Button>
 
                     {!isEditing ? (
                         <Button onClick={handleEdit} variant="outline">
                             <Edit className="mr-2 h-4 w-4" />
-                            {t('edit')}
+                            {mounted ? t('edit') : 'Edit'}
                         </Button>
                     ) : (
                         <div className="flex gap-2">
                             <Button onClick={handleCancel} variant="outline" disabled={saving}>
                                 <X className="mr-2 h-4 w-4" />
-                                {t('cancel')}
+                                {mounted ? t('cancel') : 'Cancel'}
                             </Button>
                             <Button onClick={handleSave} disabled={saving}>
                                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                {t('save')}
+                                {mounted ? t('save') : 'Save'}
                             </Button>
                         </div>
                     )}
@@ -196,7 +201,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 {isEditing ? (
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">{t('name_label')}</label>
+                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">{mounted ? t('name_label') : 'Title'}</label>
                                             <Input
                                                 value={editedTitle}
                                                 onChange={(e) => setEditedTitle(e.target.value)}
@@ -209,7 +214,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         <CardTitle className="text-2xl mb-2">{product.title}</CardTitle>
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Package className="h-4 w-4" />
-                                            <span>{t('product_id')}: {product.sheetId}</span>
+                                            <span>{mounted ? t('product_id') : 'Product ID'}: {product.sheetId}</span>
                                         </div>
                                     </>
                                 )}
@@ -236,12 +241,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {/* Details Section */}
                             <div className="space-y-6">
                                 <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('price_label')}</h3>
+                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{mounted ? t('price_label') : 'Price'}</h3>
                                     <p className="text-3xl font-bold">{product.price || 'N/A'}</p>
                                 </div>
 
                                 <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('category_label')}</h3>
+                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{mounted ? t('category_label') : 'Category'}</h3>
                                     {isEditing ? (
                                         <div className="space-y-2">
                                             {isCreatingCategory ? (
@@ -249,7 +254,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                     <Input
                                                         value={newCategoryName}
                                                         onChange={(e) => setNewCategoryName(e.target.value)}
-                                                        placeholder={t('new_category_label')}
+                                                        placeholder={mounted ? t('new_category_label') : 'New Category Name'}
                                                         className="h-9"
                                                     />
                                                     <Button
@@ -295,7 +300,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                         value={editedCategoryId}
                                                         onChange={(e) => setEditedCategoryId(e.target.value)}
                                                     >
-                                                        <option value="">{t('select_category')}</option>
+                                                        <option value="">{mounted ? t('select_category') : 'Select Category...'}</option>
                                                         {categories.map(c => (
                                                             <option key={c.id} value={c.id}>{c.name}</option>
                                                         ))}
@@ -304,10 +309,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => setIsCreatingCategory(true)}
-                                                        title={t('add')}
+                                                        title={mounted ? t('add') : 'Create New Category'}
                                                     >
                                                         <Tag className="h-4 w-4 mr-1" />
-                                                        {t('add')}
+                                                        {mounted ? t('add') : 'Add'}
                                                     </Button>
                                                 </div>
                                             )}
@@ -315,7 +320,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     ) : (
                                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
                                             <Tag className="h-4 w-4" />
-                                            <span>{product.category || t('uncategorized')}</span>
+                                            <span>{product.category || (mounted ? t('uncategorized') : 'Uncategorized')}</span>
                                         </div>
                                     )}
                                 </div>
@@ -328,7 +333,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             onClick={() => window.open(product.url, '_blank')}
                                         >
                                             <ExternalLink className="mr-2 h-4 w-4" />
-                                            {t('amazon_view')}
+                                            {mounted ? t('amazon_view') : 'View on Amazon'}
                                         </Button>
                                     )}
                                 </div>
@@ -337,27 +342,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                         {/* Additional Info */}
                         <div className="border-t pt-6">
-                            <h3 className="text-lg font-semibold mb-4">{t('product_info')}</h3>
+                            <h3 className="text-lg font-semibold mb-4">{mounted ? t('product_info') : 'Product Information'}</h3>
                             <div className="grid gap-4">
                                 <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">{t('name_label')}</span>
+                                    <span className="text-muted-foreground">{mounted ? t('name_label') : 'Title'}</span>
                                     <span className="font-medium text-right max-w-md">{isEditing ? editedTitle : product.title}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">{t('price_label')}</span>
+                                    <span className="text-muted-foreground">{mounted ? t('price_label') : 'Price'}</span>
                                     <span className="font-medium">{product.price || 'N/A'}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">{t('category_label')}</span>
+                                    <span className="text-muted-foreground">{mounted ? t('category_label') : 'Category'}</span>
                                     <span className="font-medium">
                                         {isEditing
-                                            ? (categories.find(c => c.id === editedCategoryId)?.name || t('uncategorized'))
-                                            : (product.category || t('uncategorized'))
+                                            ? (categories.find(c => c.id === editedCategoryId)?.name || (mounted ? t('uncategorized') : 'Uncategorized'))
+                                            : (product.category || (mounted ? t('uncategorized') : 'Uncategorized'))
                                         }
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center py-2">
-                                    <span className="text-muted-foreground">{t('product_id')}</span>
+                                    <span className="text-muted-foreground">{mounted ? t('product_id') : 'Product ID'}</span>
                                     <span className="font-medium">{product.sheetId}</span>
                                 </div>
                             </div>

@@ -51,10 +51,12 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
     const [localProducts, setLocalProducts] = useState<Product[]>(products);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+    const [mounted, setMounted] = useState(false);
     const itemsPerPage = 10;
 
-    // Sync local products with props
+    // Sync local products with props and set mounted
     React.useEffect(() => {
+        setMounted(true);
         setLocalProducts(products);
     }, [products]);
 
@@ -175,12 +177,12 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
             <Card className="mt-8">
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle>{t('product_list_title')} ({filteredProducts.length})</CardTitle>
+                        <CardTitle>{mounted ? t('product_list_title') : 'Managed Products'} ({filteredProducts.length})</CardTitle>
                         <div className="flex items-center gap-2">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder={t('search_placeholder')}
+                                    placeholder={mounted ? t('search_placeholder') : 'Search products...'}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-9 w-64"
@@ -195,12 +197,12 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[80px]">ID</TableHead>
-                                    <TableHead className="w-[100px]">{t('image_label')}</TableHead>
-                                    <TableHead>{t('name_label')}</TableHead>
-                                    <TableHead className="w-[120px]">{t('price_label')}</TableHead>
-                                    <TableHead className="w-[150px] text-center">{t('category_label')}</TableHead>
-                                    <TableHead className="w-[100px]">{t('status_label')}</TableHead>
-                                    <TableHead className="w-[200px] text-right">{t('actions_label')}</TableHead>
+                                    <TableHead className="w-[100px]">{mounted ? t('image_label') : 'Image'}</TableHead>
+                                    <TableHead>{mounted ? t('name_label') : 'Name'}</TableHead>
+                                    <TableHead className="w-[120px]">{mounted ? t('price_label') : 'Price'}</TableHead>
+                                    <TableHead className="w-[150px] text-center">{mounted ? t('category_label') : 'Category'}</TableHead>
+                                    <TableHead className="w-[100px]">{mounted ? t('status_label') : 'Status'}</TableHead>
+                                    <TableHead className="w-[200px] text-right">{mounted ? t('actions_label') : 'Actions'}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
