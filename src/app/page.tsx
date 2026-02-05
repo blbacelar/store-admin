@@ -1,66 +1,107 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+import { useState, useEffect } from 'react';
+import AddProduct from './components/AddProduct';
+import ProductList from './components/ProductList';
+import ThemeToggle from './components/ThemeToggle';
+import { Loader2, Package } from 'lucide-react';
 
 export default function Home() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch products
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setProducts(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const handleAdd = async (product: any) => {
+    try {
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product)
+      });
+      if (res.ok) {
+        fetchProducts();
+      } else {
+        alert('Failed to save to sheet. Please ensure credentials.json is set up and the sheet is shared completely.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error saving product');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`/api/products?index=${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchProducts();
+      } else {
+        alert('Failed to delete. Check console.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error deleting product');
+    }
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <>
+      <ThemeToggle />
+      <main className="min-h-screen bg-background text-foreground py-12 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+
+          <header className="flex flex-col items-center text-center space-y-4">
+            <div className="bg-primary/10 p-3 rounded-full">
+              <Package className="w-12 h-12 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
+                Amazon Admin
+              </h1>
+              <p className="text-muted-foreground text-lg mt-2 font-medium">
+                Automate your product tracking workflow
+              </p>
+            </div>
+          </header>
+
+          <div className="grid gap-8">
+            <AddProduct onAdd={handleAdd} />
+
+            {loading ? (
+              <div className="flex flex-col items-center justify-center p-12 space-y-4 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p>Loading products...</p>
+              </div>
+            ) : (
+              <ProductList products={products} onDelete={handleDelete} onRefresh={fetchProducts} />
+            )}
+          </div>
+
         </div>
       </main>
-    </div>
+    </>
   );
 }
