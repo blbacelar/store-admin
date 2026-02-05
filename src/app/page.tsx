@@ -3,9 +3,14 @@ import { useState, useEffect } from 'react';
 import AddProduct from './components/AddProduct';
 import ProductList from './components/ProductList';
 import ThemeToggle from './components/ThemeToggle';
+import LanguageToggle from './components/LanguageToggle';
 import { Loader2, Package } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 export default function Home() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -43,7 +48,7 @@ export default function Home() {
       if (res.ok) {
         fetchProducts();
       } else {
-        alert('Failed to save to sheet. Please ensure credentials.json is set up and the sheet is shared completely.');
+        alert('Failed to save product to database. Please check the console for details.');
       }
     } catch (e) {
       console.error(e);
@@ -53,7 +58,7 @@ export default function Home() {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch(`/api/products?index=${id}`, {
+      const res = await fetch(`/api/products?id=${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -70,6 +75,7 @@ export default function Home() {
   return (
     <>
       <ThemeToggle />
+      <LanguageToggle />
       <main className="min-h-screen bg-background text-foreground py-12 px-4 md:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
 
@@ -79,11 +85,16 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
-                Amazon Admin
+                {t('dashboard_title')}
               </h1>
               <p className="text-muted-foreground text-lg mt-2 font-medium">
-                Automate your product tracking workflow
+                {t('dashboard_sub')}
               </p>
+              <div className="mt-6">
+                <Link href="/categories">
+                  <Button variant="outline">{t('manage_categories')}</Button>
+                </Link>
+              </div>
             </div>
           </header>
 
@@ -93,7 +104,7 @@ export default function Home() {
             {loading ? (
               <div className="flex flex-col items-center justify-center p-12 space-y-4 text-muted-foreground">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p>Loading products...</p>
+                <p>{t('loading_products')}</p>
               </div>
             ) : (
               <ProductList products={products} onDelete={handleDelete} onRefresh={fetchProducts} />

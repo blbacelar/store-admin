@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,7 @@ interface ProductListProps {
 }
 
 export default function ProductList({ products, onDelete, onRefresh }: ProductListProps) {
+    const { t } = useTranslation();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -152,9 +154,6 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
             // Revert the optimistic update on error
             setLocalProducts(prevProducts => {
                 // Re-insert the product at its original position
-                // Note: With string IDs, exact original index position restoration is tricky without knowing it.
-                // Simplified: just add it back and let sort handle it or simple append.
-                // Better: filtered out, now add back.
                 return [...prevProducts, deletedProduct];
             });
             alert('Failed to delete product. Please try again.');
@@ -165,7 +164,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
         return (
             <Card className="mt-8">
                 <CardContent className="flex flex-col items-center justify-center p-12 text-muted-foreground">
-                    <p>No products found yet.</p>
+                    <p>{t('no_products')}</p>
                 </CardContent>
             </Card>
         );
@@ -176,12 +175,12 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
             <Card className="mt-8">
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle>Managed Products ({filteredProducts.length})</CardTitle>
+                        <CardTitle>{t('product_list_title')} ({filteredProducts.length})</CardTitle>
                         <div className="flex items-center gap-2">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search products..."
+                                    placeholder={t('search_placeholder')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-9 w-64"
@@ -196,19 +195,19 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[80px]">ID</TableHead>
-                                    <TableHead className="w-[100px]">Image</TableHead>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead className="w-[120px]">Price</TableHead>
-                                    <TableHead className="w-[150px] text-center">Category</TableHead>
-                                    <TableHead className="w-[100px]">Status</TableHead>
-                                    <TableHead className="w-[200px] text-right">Actions</TableHead>
+                                    <TableHead className="w-[100px]">{t('image_label')}</TableHead>
+                                    <TableHead>{t('name_label')}</TableHead>
+                                    <TableHead className="w-[120px]">{t('price_label')}</TableHead>
+                                    <TableHead className="w-[150px] text-center">{t('category_label')}</TableHead>
+                                    <TableHead className="w-[100px]">{t('status_label')}</TableHead>
+                                    <TableHead className="w-[200px] text-right">{t('actions_label')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {paginatedProducts.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                                            No products match your search.
+                                            {t('no_products')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -232,14 +231,14 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                                             <TableCell>{p.price || 'N/A'}</TableCell>
                                             <TableCell className="text-center">
                                                 <span className="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs bg-secondary">
-                                                    {p.category || 'Uncategorized'}
+                                                    {p.category || t('uncategorized')}
                                                 </span>
                                             </TableCell>
                                             <TableCell>
                                                 {p.archived ? (
-                                                    <span className="text-xs text-muted-foreground">Archived</span>
+                                                    <span className="text-xs text-muted-foreground">{t('archived')}</span>
                                                 ) : (
-                                                    <span className="text-xs text-green-600 dark:text-green-400">Active</span>
+                                                    <span className="text-xs text-green-600 dark:text-green-400">{t('active')}</span>
                                                 )}
                                             </TableCell>
                                             <TableCell>
@@ -249,7 +248,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                                                         size="icon"
                                                         onClick={() => router.push(`/products/${p.id}`)}
                                                         className="h-8 w-8"
-                                                        title="Edit Product"
+                                                        title={t('edit')}
                                                     >
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
@@ -267,7 +266,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                                                         size="icon"
                                                         onClick={() => handleDeleteClick(p)}
                                                         className="h-8 w-8"
-                                                        title="Delete Product"
+                                                        title={t('delete')}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
@@ -284,7 +283,11 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between mt-4">
                             <div className="text-sm text-muted-foreground">
-                                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+                                {t('page_info', {
+                                    start: ((currentPage - 1) * itemsPerPage) + 1,
+                                    end: Math.min(currentPage * itemsPerPage, filteredProducts.length),
+                                    total: filteredProducts.length
+                                })}
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button
@@ -294,10 +297,10 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                                     disabled={currentPage === 1}
                                 >
                                     <ChevronLeft className="h-4 w-4 mr-1" />
-                                    Previous
+                                    {t('previous')}
                                 </Button>
                                 <div className="text-sm">
-                                    Page {currentPage} of {totalPages}
+                                    {t('page_current', { current: currentPage, total: totalPages })}
                                 </div>
                                 <Button
                                     variant="outline"
@@ -305,7 +308,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
                                 >
-                                    Next
+                                    {t('next')}
                                     <ChevronRight className="h-4 w-4 ml-1" />
                                 </Button>
                             </div>
@@ -318,18 +321,18 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                        <AlertDialogTitle>{t('delete_product')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete "{productToDelete?.title}"? This action cannot be undone.
+                            {t('delete_desc', { title: productToDelete?.title })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleConfirmDelete}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            Delete
+                            {t('delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

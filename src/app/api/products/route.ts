@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
+import { notifyStoreService } from '@/app/lib/socket';
 
 export async function GET() {
     try {
@@ -39,10 +40,35 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        // Parse price with locale awareness
+        let parsedPrice = 0;
+        if (price && price !== 'No Price Found') {
+            // Remove currency symbols and non-numeric chars except separators
+            let cleaned = price.replace(/[^\d.,]/g, '');
+            const lastComma = cleaned.lastIndexOf(',');
+            const lastDot = cleaned.lastIndexOf('.');
+
+            if (lastComma > lastDot) {
+                // BR/EU format (e.g., 1.200,50 or 29,90) - Remove dots, swap comma to dot
+                cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+            } else {
+                // US format (e.g., 1,200.50 or 29.90) - Remove commas
+                cleaned = cleaned.replace(/,/g, '');
+            }
+            parsedPrice = parseFloat(cleaned);
+            if (isNaN(parsedPrice)) parsedPrice = 0;
+        }
+
+        // Final check for title after potential sanitization (future-proofing)
+        const sanitizedTitle = title.trim();
+        if (!sanitizedTitle) {
+            return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
+        }
+
         const newProduct = await prisma.product.create({
             data: {
-                name: title,
-                price: parseFloat(price.replace(/[^0-9.]/g, '')) || 0, // Ensure float
+                name: sanitizedTitle,
+                price: parsedPrice,
                 imageUrl: image || '',
                 affiliateUrl: url,
                 archived: false
@@ -50,6 +76,7 @@ export async function POST(request: Request) {
             }
         });
 
+        notifyStoreService();
         return NextResponse.json(newProduct);
     } catch (error) {
         console.error('Error creating product:', error);
@@ -60,7 +87,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const id = searchParams.get('index'); // Maintaining query param name 'index' but it contains the ID now
+        const id = searchParams.get('id');
 
         if (!id) {
             return NextResponse.json({ error: 'ID required' }, { status: 400 });
@@ -72,6 +99,7 @@ export async function DELETE(request: Request) {
             }
         });
 
+        notifyStoreService();
         return NextResponse.json({ message: 'Deleted' });
     } catch (error) {
         console.error('Error deleting product:', error);

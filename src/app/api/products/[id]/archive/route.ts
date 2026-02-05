@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
+import { notifyStoreService } from '@/app/lib/socket';
 
 export async function PATCH(
     request: Request,
@@ -9,6 +10,8 @@ export async function PATCH(
         const { id: idParam } = await params;
         const body = await request.json();
         const { archived } = body;
+
+        console.log(`Updating archive status for ${idParam} to ${archived}`);
 
         if (typeof archived !== 'boolean') {
             return NextResponse.json({ error: 'Archived must be a boolean' }, { status: 400 });
@@ -23,6 +26,7 @@ export async function PATCH(
             }
         });
 
+        notifyStoreService();
         return NextResponse.json({ success: true, archived: updatedProduct.archived });
     } catch (error) {
         console.error('Error archiving product:', error);

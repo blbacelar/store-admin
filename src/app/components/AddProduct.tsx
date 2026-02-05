@@ -1,11 +1,14 @@
+
 'use client';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
 export default function AddProduct({ onAdd }: { onAdd: (product: any) => Promise<void> }) {
+    const { t } = useTranslation();
     const [url, setUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [preview, setPreview] = useState<any>(null);
@@ -26,7 +29,7 @@ export default function AddProduct({ onAdd }: { onAdd: (product: any) => Promise
             if (data.error) throw new Error(data.error);
             setPreview(data);
         } catch (err: any) {
-            setError(err.message || 'Failed to scrape');
+            setError(err.message || t('fetch_error'));
         } finally {
             setLoading(false);
         }
@@ -44,7 +47,7 @@ export default function AddProduct({ onAdd }: { onAdd: (product: any) => Promise
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle>Add New Product</CardTitle>
+                <CardTitle>{t('add_product_title')}</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex gap-4 mb-4">
@@ -52,11 +55,11 @@ export default function AddProduct({ onAdd }: { onAdd: (product: any) => Promise
                         type="text"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
-                        placeholder="Paste Amazon Product URL..."
+                        placeholder={t('url_placeholder')}
                         className="flex-1"
                     />
                     <Button onClick={handleScrape} disabled={loading} className="min-w-[100px]">
-                        {loading && !preview ? <Loader2 className="animate-spin h-4 w-4" /> : 'Add Product'}
+                        {loading && !preview ? <Loader2 className="animate-spin h-4 w-4" /> : t('add_button')}
                     </Button>
                 </div>
 
@@ -70,11 +73,11 @@ export default function AddProduct({ onAdd }: { onAdd: (product: any) => Promise
                         <div className="flex-grow min-w-0">
                             <h4 className="font-semibold text-sm line-clamp-2 mb-1">{preview.title}</h4>
                             <div className="text-muted-foreground text-sm mb-2">{preview.price}</div>
-                            <a href={preview.url} target="_blank" className="text-xs text-primary underline hover:text-primary/80">View Strategy</a>
+                            <a href={preview.url} target="_blank" className="text-xs text-primary underline hover:text-primary/80">{t('view_page')}</a>
                         </div>
                         <Button onClick={handleSave} disabled={loading}>
                             {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
-                            {loading ? 'Saving...' : 'Save'}
+                            {loading ? t('saving') : t('save')}
                         </Button>
                     </div>
                 )}

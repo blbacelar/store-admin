@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
+import { notifyStoreService } from '@/app/lib/socket';
 
 export async function PUT(
     request: Request,
@@ -9,10 +10,9 @@ export async function PUT(
         const { id: idParam } = await params;
         const body = await request.json();
         const { title, categoryId } = body;
-
-        // Note: categoryId is optional now
-        if (!title) {
-            return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+        const sanitizedTitle = title?.trim();
+        if (!sanitizedTitle) {
+            return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
         }
 
         const updatedProduct = await prisma.product.update({
@@ -20,11 +20,12 @@ export async function PUT(
                 id: idParam
             },
             data: {
-                name: title,
+                name: sanitizedTitle,
                 categoryId: categoryId || null // If empty string/undefined, disconnect category
             }
         });
 
+        notifyStoreService();
         return NextResponse.json(updatedProduct);
     } catch (error) {
         console.error('Error updating product:', error);

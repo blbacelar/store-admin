@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ExternalLink, Loader2, Tag, Package, Edit, Save, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Category {
     id: string;
@@ -23,6 +24,7 @@ interface Product {
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { t } = useTranslation();
     const router = useRouter();
     const resolvedParams = use(params);
     const [product, setProduct] = useState<Product | null>(null);
@@ -49,7 +51,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 setEditedTitle(data.title);
                 setEditedCategoryId(data.categoryId || '');
             } catch (err: any) {
-                setError(err.message || 'Failed to load product');
+                setError(err.message || t('fetch_error'));
             } finally {
                 setLoading(false);
             }
@@ -69,7 +71,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         fetchProduct();
         fetchCategories();
-    }, [resolvedParams.id]);
+    }, [resolvedParams.id, t]);
 
     const handleEdit = () => {
         setIsEditing(true);
@@ -104,7 +106,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             }
 
             // Find category name for display logic update
-            const newCategoryName = categories.find(c => c.id === editedCategoryId)?.name || 'Uncategorized';
+            const newCategoryName = categories.find(c => c.id === editedCategoryId)?.name || t('uncategorized');
 
             // Update local state
             setProduct({
@@ -115,7 +117,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             });
             setIsEditing(false);
         } catch (err: any) {
-            alert(err.message || 'Failed to save changes');
+            alert(err.message || t('fetch_error'));
         } finally {
             setSaving(false);
         }
@@ -127,7 +129,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <div className="max-w-4xl mx-auto">
                     <div className="flex flex-col items-center justify-center p-12 space-y-4 text-muted-foreground">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <p>Loading product...</p>
+                        <p>{t('loading_products')}</p>
                     </div>
                 </div>
             </main>
@@ -144,11 +146,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         className="mb-6"
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Dashboard
+                        {t('back_dashboard')}
                     </Button>
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center p-12 text-muted-foreground">
-                            <p className="text-destructive">{error || 'Product not found'}</p>
+                            <p className="text-destructive">{error || t('no_products')}</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -165,23 +167,23 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         onClick={() => router.push('/')}
                     >
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Dashboard
+                        {t('back_dashboard')}
                     </Button>
 
                     {!isEditing ? (
                         <Button onClick={handleEdit} variant="outline">
                             <Edit className="mr-2 h-4 w-4" />
-                            Edit
+                            {t('edit')}
                         </Button>
                     ) : (
                         <div className="flex gap-2">
                             <Button onClick={handleCancel} variant="outline" disabled={saving}>
                                 <X className="mr-2 h-4 w-4" />
-                                Cancel
+                                {t('cancel')}
                             </Button>
                             <Button onClick={handleSave} disabled={saving}>
                                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                Save
+                                {t('save')}
                             </Button>
                         </div>
                     )}
@@ -194,7 +196,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 {isEditing ? (
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">Title</label>
+                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">{t('name_label')}</label>
                                             <Input
                                                 value={editedTitle}
                                                 onChange={(e) => setEditedTitle(e.target.value)}
@@ -207,7 +209,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         <CardTitle className="text-2xl mb-2">{product.title}</CardTitle>
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Package className="h-4 w-4" />
-                                            <span>Product ID: {product.sheetId}</span>
+                                            <span>{t('product_id')}: {product.sheetId}</span>
                                         </div>
                                     </>
                                 )}
@@ -234,12 +236,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {/* Details Section */}
                             <div className="space-y-6">
                                 <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Price</h3>
+                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('price_label')}</h3>
                                     <p className="text-3xl font-bold">{product.price || 'N/A'}</p>
                                 </div>
 
                                 <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Category</h3>
+                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('category_label')}</h3>
                                     {isEditing ? (
                                         <div className="space-y-2">
                                             {isCreatingCategory ? (
@@ -247,7 +249,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                     <Input
                                                         value={newCategoryName}
                                                         onChange={(e) => setNewCategoryName(e.target.value)}
-                                                        placeholder="New Category Name"
+                                                        placeholder={t('new_category_label')}
                                                         className="h-9"
                                                     />
                                                     <Button
@@ -293,7 +295,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                         value={editedCategoryId}
                                                         onChange={(e) => setEditedCategoryId(e.target.value)}
                                                     >
-                                                        <option value="">Select Category...</option>
+                                                        <option value="">{t('select_category')}</option>
                                                         {categories.map(c => (
                                                             <option key={c.id} value={c.id}>{c.name}</option>
                                                         ))}
@@ -302,10 +304,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => setIsCreatingCategory(true)}
-                                                        title="Create New Category"
+                                                        title={t('add')}
                                                     >
                                                         <Tag className="h-4 w-4 mr-1" />
-                                                        New
+                                                        {t('add')}
                                                     </Button>
                                                 </div>
                                             )}
@@ -313,7 +315,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     ) : (
                                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
                                             <Tag className="h-4 w-4" />
-                                            <span>{product.category || 'Uncategorized'}</span>
+                                            <span>{product.category || t('uncategorized')}</span>
                                         </div>
                                     )}
                                 </div>
@@ -326,7 +328,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             onClick={() => window.open(product.url, '_blank')}
                                         >
                                             <ExternalLink className="mr-2 h-4 w-4" />
-                                            View on Amazon
+                                            {t('amazon_view')}
                                         </Button>
                                     )}
                                 </div>
@@ -335,27 +337,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                         {/* Additional Info */}
                         <div className="border-t pt-6">
-                            <h3 className="text-lg font-semibold mb-4">Product Information</h3>
+                            <h3 className="text-lg font-semibold mb-4">{t('product_info')}</h3>
                             <div className="grid gap-4">
                                 <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">Title</span>
+                                    <span className="text-muted-foreground">{t('name_label')}</span>
                                     <span className="font-medium text-right max-w-md">{isEditing ? editedTitle : product.title}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">Price</span>
+                                    <span className="text-muted-foreground">{t('price_label')}</span>
                                     <span className="font-medium">{product.price || 'N/A'}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">Category</span>
+                                    <span className="text-muted-foreground">{t('category_label')}</span>
                                     <span className="font-medium">
                                         {isEditing
-                                            ? (categories.find(c => c.id === editedCategoryId)?.name || 'Uncategorized')
-                                            : (product.category || 'Uncategorized')
+                                            ? (categories.find(c => c.id === editedCategoryId)?.name || t('uncategorized'))
+                                            : (product.category || t('uncategorized'))
                                         }
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center py-2">
-                                    <span className="text-muted-foreground">Product ID</span>
+                                    <span className="text-muted-foreground">{t('product_id')}</span>
                                     <span className="font-medium">{product.sheetId}</span>
                                 </div>
                             </div>
