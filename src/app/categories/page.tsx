@@ -14,6 +14,7 @@ import {
 import { Trash2, Loader2, ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'next/navigation';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -36,7 +37,9 @@ interface Category {
 
 export default function CategoriesPage() {
     const { t } = useTranslation();
+    const router = useRouter();
     const [categories, setCategories] = useState<Category[]>([]);
+    const [activeStore, setActiveStore] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [newCategory, setNewCategory] = useState('');
@@ -46,12 +49,33 @@ export default function CategoriesPage() {
 
     useEffect(() => {
         setMounted(true);
+        checkStores();
     }, []);
 
-    const fetchCategories = async () => {
+    const checkStores = async () => {
+        try {
+            const res = await fetch('/api/stores');
+            const data = await res.json();
+
+            if (Array.isArray(data) && data.length > 0) {
+                setActiveStore(data[0]);
+                fetchCategories(data[0].id);
+            } else {
+                router.push('/setup-store');
+            }
+        } catch (error) {
+            console.error('Failed to check stores', error);
+            setLoading(false);
+        }
+    };
+
+    const fetchCategories = async (storeId?: string) => {
+        const id = storeId || activeStore?.id;
+        if (!id) return;
+
         try {
             setLoading(true);
-            const res = await fetch('/api/categories');
+            const res = await fetch(`/api/categories?storeId=${id}`);
             if (!res.ok) throw new Error('Failed to fetch categories');
             const data = await res.json();
             setCategories(data);
@@ -63,20 +87,15 @@ export default function CategoriesPage() {
         }
     };
 
-    useEffect(() => {
-        setMounted(true);
-        fetchCategories();
-    }, []);
-
     const handleAdd = async () => {
-        if (!newCategory.trim()) return;
+        if (!newCategory.trim() || !activeStore) return;
         setAddLoading(true);
         setError('');
         try {
             const res = await fetch('/api/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newCategory })
+                body: JSON.stringify({ name: newCategory, storeId: activeStore.id })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to add category');
@@ -115,7 +134,9 @@ export default function CategoriesPage() {
             <div className="max-w-4xl mx-auto space-y-8">
                 <header className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-primary">{mounted ? t('manage_categories') : 'Manage Categories'}</h1>
+                        <h1 className="text-3xl font-bold text-primary">
+                            {activeStore ? `${activeStore.name} - ${t('categories')}` : (mounted ? t('manage_categories') : 'Manage Categories')}
+                        </h1>
                         <p className="text-muted-foreground">{mounted ? t('manage_categories_sub') : 'Add or remove product categories'}</p>
                     </div>
                     <Link href="/">

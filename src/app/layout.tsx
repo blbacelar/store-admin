@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import I18nInitializer from "@/components/I18nInitializer";
+import AuthContext from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,9 +35,11 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <I18nInitializer>
-          {children}
-        </I18nInitializer>
+        <AuthContext>
+          <I18nInitializer>
+            {children}
+          </I18nInitializer>
+        </AuthContext>
       </body>
     </html>
   );

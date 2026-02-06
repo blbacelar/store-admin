@@ -10,27 +10,101 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Product {
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  accounts       Account[]
+  sessions       Session[]
+  stores         Store[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Store {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  userId     String     @db.ObjectId
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products   Product[]
+  categories Category[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("stores")
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Product {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
   name         String
   price        Float
-  categoryId   String?  @db.ObjectId
+  categoryId   String?   @db.ObjectId
   category     Category? @relation(fields: [categoryId], references: [id])
+  storeId      String?   @db.ObjectId
+  store        Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   imageUrl     String
   affiliateUrl String
-  archived     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  archived     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@map("products")
 }
 
 model Category {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  name      String    @unique
+  name      String
+  storeId   String    @db.ObjectId
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([name, storeId])
   @@map("categories")
 }

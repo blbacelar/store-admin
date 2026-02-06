@@ -7,6 +7,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 const resources = {
     en: {
         translation: {
+            "all": "All",
             "dashboard_title": "Amazon Admin",
             "dashboard_sub": "Automate your product tracking workflow",
             "manage_categories": "Manage Categories",
@@ -53,11 +54,33 @@ const resources = {
             "amazon_view": "View on Amazon",
             "new_category_label": "New Category Name",
             "select_category": "Select Category...",
-            "image_label": "Image"
+            "image_label": "Image",
+            "login_title": "Amazon Admin",
+            "login_sub": "Sign in to your account to continue",
+            "continue_google": "Continue with Google",
+            "or_continue_with": "Or continue with",
+            "email_placeholder": "name@example.com",
+            "password_placeholder": "Password",
+            "sign_in": "Sign In",
+            "no_account": "Don't have an account?",
+            "register_here": "Register here",
+            "join_us": "Join us",
+            "create_admin_account": "Create your admin account",
+            "full_name": "Full Name",
+            "create_password": "Create Password",
+            "create_account": "Create Account",
+            "already_have_account": "Already have an account?",
+            "back_to_login": "Back to login",
+            "sign_out": "Sign Out",
+            "setup_store_title": "Setup Your Store",
+            "setup_store_sub": "Give your store a name to start managing products",
+            "store_name_placeholder": "My Amazon Store",
+            "create_store": "Create Store"
         }
     },
     pt: {
         translation: {
+            "all": "Todos",
             "dashboard_title": "Painel Amazon",
             "dashboard_sub": "Automatize seu fluxo de triagem de produtos",
             "manage_categories": "Gerenciar Categorias",
@@ -104,7 +127,28 @@ const resources = {
             "amazon_view": "Ver na Amazon",
             "new_category_label": "Nome da Nova Categoria",
             "select_category": "Selecionar Categoria...",
-            "image_label": "Imagem"
+            "image_label": "Imagem",
+            "login_title": "Painel Amazon",
+            "login_sub": "Entre na sua conta para continuar",
+            "continue_google": "Continuar com Google",
+            "or_continue_with": "Ou continue com",
+            "email_placeholder": "nome@exemplo.com",
+            "password_placeholder": "Senha",
+            "sign_in": "Entrar",
+            "no_account": "Não tem uma conta?",
+            "register_here": "Registre-se aqui",
+            "join_us": "Junte-se a nós",
+            "create_admin_account": "Crie sua conta de administrador",
+            "full_name": "Nome Completo",
+            "create_password": "Criar Senha",
+            "create_account": "Criar Conta",
+            "already_have_account": "Já tem uma conta?",
+            "back_to_login": "Voltar para o login",
+            "sign_out": "Sair",
+            "setup_store_title": "Configure sua Loja",
+            "setup_store_sub": "Dê um nome à sua loja para começar a gerenciar produtos",
+            "store_name_placeholder": "Minha Loja Amazon",
+            "create_store": "Criar Loja"
         }
     }
 };

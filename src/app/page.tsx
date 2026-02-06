@@ -4,26 +4,53 @@ import AddProduct from './components/AddProduct';
 import ProductList from './components/ProductList';
 import ThemeToggle from './components/ThemeToggle';
 import LanguageToggle from './components/LanguageToggle';
+import { useRouter } from 'next/navigation';
 import { Loader2, Package } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { signOut } from 'next-auth/react';
+import { LogOut } from 'lucide-react';
 
 export default function Home() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [activeStore, setActiveStore] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    fetchProducts();
+    checkStores();
   }, []);
 
-  // Fetch products
-  const fetchProducts = async () => {
+  const checkStores = async () => {
     try {
-      const res = await fetch('/api/products', {
+      const res = await fetch('/api/stores');
+      const data = await res.json();
+
+      if (Array.isArray(data) && data.length > 0) {
+        setStores(data);
+        setActiveStore(data[0]); // Default to first store
+        fetchProducts(data[0].id);
+      } else {
+        router.push('/setup-store');
+      }
+    } catch (error) {
+      console.error('Failed to check stores', error);
+      setLoading(false);
+    }
+  };
+
+  // Fetch products
+  const fetchProducts = async (storeId?: string) => {
+    const id = storeId || activeStore?.id;
+    if (!id) return;
+
+    try {
+      const res = await fetch(`/api/products?storeId=${id}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache'
@@ -41,11 +68,12 @@ export default function Home() {
   };
 
   const handleAdd = async (product: any) => {
+    if (!activeStore) return;
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(product)
+        body: JSON.stringify({ ...product, storeId: activeStore.id })
       });
       if (res.ok) {
         fetchProducts();
@@ -78,6 +106,15 @@ export default function Home() {
     <>
       <ThemeToggle />
       <LanguageToggle />
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => signOut()}
+        className="fixed top-4 right-[10.5rem] z-50 h-10 w-10 border-border bg-background/50 backdrop-blur-sm hover:text-destructive transition-colors"
+        title="Sign Out"
+      >
+        <LogOut className="h-5 w-5" />
+      </Button>
       <main className="min-h-screen bg-background text-foreground py-12 px-4 md:px-8">
         <div className="max-w-7xl mx-auto space-y-8">
 
@@ -87,7 +124,7 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
-                {mounted ? t('dashboard_title') : 'Amazon Admin'}
+                {activeStore ? activeStore.name : (mounted ? t('dashboard_title') : 'Amazon Admin')}
               </h1>
               <p className="text-muted-foreground text-lg mt-2 font-medium">
                 {mounted ? t('dashboard_sub') : 'Automate your product tracking workflow'}

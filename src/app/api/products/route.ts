@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const storeId = searchParams.get('storeId');
+
+        if (!storeId) {
+            return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
+        }
+
         const products = await prisma.product.findMany({
+            where: {
+                storeId: storeId
+            },
             include: {
                 category: true
             },
@@ -33,10 +43,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const { title, price, image, url } = await request.json();
+        const { title, price, image, url, storeId } = await request.json();
 
         // Validate
-        if (!title || !url) {
+        if (!title || !url || !storeId) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
@@ -71,8 +81,8 @@ export async function POST(request: Request) {
                 price: parsedPrice,
                 imageUrl: image || '',
                 affiliateUrl: url,
+                storeId: storeId,
                 archived: false
-                // category is optional, so we don't set it initially
             }
         });
 

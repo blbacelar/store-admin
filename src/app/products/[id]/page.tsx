@@ -28,6 +28,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const router = useRouter();
     const resolvedParams = use(params);
     const [product, setProduct] = useState<Product | null>(null);
+    const [stores, setStores] = useState<any[]>([]);
+    const [activeStore, setActiveStore] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isEditing, setIsEditing] = useState(false);
@@ -45,38 +47,58 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }, []);
 
     useEffect(() => {
-        const fetchProduct = async () => {
-            try {
-                const res = await fetch(`/api/products/${resolvedParams.id}`);
-                if (!res.ok) {
-                    throw new Error('Product not found');
-                }
-                const data = await res.json();
-                setProduct(data);
-                setEditedTitle(data.title);
-                setEditedCategoryId(data.categoryId || '');
-            } catch (err: any) {
-                setError(err.message || t('fetch_error'));
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const fetchCategories = async () => {
-            try {
-                const res = await fetch('/api/categories');
-                if (res.ok) {
-                    const data = await res.json();
-                    setCategories(data);
-                }
-            } catch (err) {
-                console.error('Failed to load categories', err);
-            }
-        };
-
+        setMounted(true);
+        checkStores();
         fetchProduct();
-        fetchCategories();
-    }, [resolvedParams.id, t]);
+    }, [resolvedParams.id]);
+
+    const checkStores = async () => {
+        try {
+            const res = await fetch('/api/stores');
+            const data = await res.json();
+
+            if (Array.isArray(data) && data.length > 0) {
+                setActiveStore(data[0]);
+                fetchCategories(data[0].id);
+            } else {
+                router.push('/setup-store');
+            }
+        } catch (error) {
+            console.error('Failed to check stores', error);
+        }
+    };
+
+    const fetchProduct = async () => {
+        try {
+            const res = await fetch(`/api/products/${resolvedParams.id}`);
+            if (!res.ok) {
+                throw new Error('Product not found');
+            }
+            const data = await res.json();
+            setProduct(data);
+            setEditedTitle(data.title);
+            setEditedCategoryId(data.categoryId || '');
+        } catch (err: any) {
+            setError(err.message || t('fetch_error'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchCategories = async (storeId?: string) => {
+        const id = storeId || activeStore?.id;
+        if (!id) return;
+
+        try {
+            const res = await fetch(`/api/categories?storeId=${id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setCategories(data);
+            }
+        } catch (err) {
+            console.error('Failed to load categories', err);
+        }
+    };
 
     const handleEdit = () => {
         setIsEditing(true);
@@ -266,7 +288,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                                 const res = await fetch('/api/categories', {
                                                                     method: 'POST',
                                                                     headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ name: newCategoryName })
+                                                                    body: JSON.stringify({ name: newCategoryName, storeId: activeStore.id })
                                                                 });
                                                                 if (res.ok) {
                                                                     const newCat = await res.json();

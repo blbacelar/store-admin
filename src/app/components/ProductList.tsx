@@ -48,6 +48,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'archived'>('active');
     const [localProducts, setLocalProducts] = useState<Product[]>(products);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -60,17 +61,29 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
         setLocalProducts(products);
     }, [products]);
 
-    // Filter products based on search query
+    // Filter products based on search query and status
     const filteredProducts = useMemo(() => {
-        if (!searchQuery.trim()) return localProducts;
+        let result = localProducts;
 
-        const query = searchQuery.toLowerCase();
-        return localProducts.filter(p =>
-            p.title.toLowerCase().includes(query) ||
-            p.category.toLowerCase().includes(query) ||
-            p.sheetId.toLowerCase().includes(query)
-        );
-    }, [localProducts, searchQuery]);
+        // Status Filter
+        if (filterStatus === 'active') {
+            result = result.filter(p => !p.archived);
+        } else if (filterStatus === 'archived') {
+            result = result.filter(p => p.archived);
+        }
+
+        // Search Filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(p =>
+                p.title.toLowerCase().includes(query) ||
+                p.category.toLowerCase().includes(query) ||
+                p.sheetId.toLowerCase().includes(query)
+            );
+        }
+
+        return result;
+    }, [localProducts, searchQuery, filterStatus]);
 
     // Pagination
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -177,7 +190,35 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
             <Card className="mt-8">
                 <CardHeader>
                     <div className="flex items-center justify-between">
-                        <CardTitle>{mounted ? t('product_list_title') : 'Managed Products'} ({filteredProducts.length})</CardTitle>
+                        <div className="flex items-center gap-4">
+                            <CardTitle>{mounted ? t('product_list_title') : 'Managed Products'} ({filteredProducts.length})</CardTitle>
+                            <div className="flex items-center bg-secondary rounded-md p-1 gap-1">
+                                <Button
+                                    variant={filterStatus === 'all' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => setFilterStatus('all')}
+                                    className="h-7 text-xs px-2"
+                                >
+                                    {mounted ? t('all') : 'All'}
+                                </Button>
+                                <Button
+                                    variant={filterStatus === 'active' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => setFilterStatus('active')}
+                                    className="h-7 text-xs px-2"
+                                >
+                                    {mounted ? t('active') : 'Active'}
+                                </Button>
+                                <Button
+                                    variant={filterStatus === 'archived' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => setFilterStatus('archived')}
+                                    className="h-7 text-xs px-2"
+                                >
+                                    {mounted ? t('archived') : 'Archived'}
+                                </Button>
+                            </div>
+                        </div>
                         <div className="flex items-center gap-2">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
