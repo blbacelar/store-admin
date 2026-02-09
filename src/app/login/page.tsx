@@ -62,7 +62,7 @@ export default function LoginPage() {
             <Card className="w-full max-w-md shadow-2xl border-primary/20 bg-card/50 backdrop-blur-sm">
                 <CardHeader className="space-y-1 text-center">
                     <CardTitle className="text-3xl font-bold tracking-tight text-primary">
-                        {mounted ? t('login_title') : 'Store Admin'}
+                        {mounted ? t('login_title') : 'My Dashboard'}
                     </CardTitle>
                     <CardDescription>
                         {mounted ? t('login_sub') : 'Sign in to your account to continue'}
@@ -75,7 +75,7 @@ export default function LoginPage() {
                         onClick={handleGoogleSignIn}
                         disabled={isLoading}
                     >
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <img src="https://www.google.com/favicon.ico" className="mr-2 h-4 w-4" alt="Google" />}
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <div className="mr-2 h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center font-bold text-[10px]">G</div>}
                         {mounted ? t('continue_google') : 'Continue with Google'}
                     </Button>
 

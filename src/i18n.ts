@@ -8,7 +8,7 @@ const resources = {
     en: {
         translation: {
             "all": "All",
-            "dashboard_title": "Store Admin",
+            "dashboard_title": "My Dashboard",
             "dashboard_sub": "Automate your product tracking workflow",
             "manage_categories": "Manage Categories",
             "loading_products": "Loading products...",
@@ -55,7 +55,7 @@ const resources = {
             "new_category_label": "New Category Name",
             "select_category": "Select Category...",
             "image_label": "Image",
-            "login_title": "Store Admin",
+            "login_title": "My Dashboard",
             "login_sub": "Sign in to your account to continue",
             "continue_google": "Continue with Google",
             "or_continue_with": "Or continue with",
@@ -81,7 +81,7 @@ const resources = {
     pt: {
         translation: {
             "all": "Todos",
-            "dashboard_title": "Painel da Loja",
+            "dashboard_title": "Meu Painel",
             "dashboard_sub": "Automatize seu fluxo de triagem de produtos",
             "manage_categories": "Gerenciar Categorias",
             "loading_products": "Carregando produtos...",
@@ -128,7 +128,7 @@ const resources = {
             "new_category_label": "Nome da Nova Categoria",
             "select_category": "Selecionar Categoria...",
             "image_label": "Imagem",
-            "login_title": "Painel da Loja",
+            "login_title": "Meu Painel",
             "login_sub": "Entre na sua conta para continuar",
             "continue_google": "Continuar com Google",
             "or_continue_with": "Ou continue com",

@@ -124,7 +124,7 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
-                {activeStore ? activeStore.name : (mounted ? t('dashboard_title') : 'Store Admin')}
+                {activeStore ? activeStore.name : (mounted ? t('dashboard_title') : 'My Dashboard')}
               </h1>
               <p className="text-muted-foreground text-lg mt-2 font-medium">
                 {mounted ? t('dashboard_sub') : 'Automate your product tracking workflow'}
