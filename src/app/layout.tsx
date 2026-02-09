@@ -9,6 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "My Dashboard",
   description: "Personal Product Manager",
+  robots: "noindex, nofollow",
 };
 
 export default function RootLayout({
