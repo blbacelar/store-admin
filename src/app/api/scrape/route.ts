@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { scrapeAmazonProduct } from '@/app/lib/amazonScraper';
+import { scrapeProduct } from '@/app/lib/productScraper';
 
 export async function POST(request: Request) {
     try {
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
         const start = Date.now();
         console.log(`Scraping URL: ${url}`);
 
-        const productData = await scrapeAmazonProduct(url);
+        const productData = await scrapeProduct(url);
 
         console.log(`Scraping took ${Date.now() - start}ms`);
 

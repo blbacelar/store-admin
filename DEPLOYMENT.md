@@ -1,6 +1,6 @@
 # Deploying to Vercel
 
-This guide will help you deploy the Amazon Product Automator to Vercel.
+This guide will help you deploy the Store Automator to Vercel.
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ vercel
 #### Option B: Using Vercel Dashboard
 
 1. Go to https://vercel.com/new
-2. Import your GitHub repository: `blbacelar/amazon-scraper`
+2. Import your GitHub repository: `blbacelar/store-automator`
 3. Configure your project settings
 4. Click "Deploy"
 

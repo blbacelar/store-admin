@@ -1,9 +1,9 @@
-# Amazon Product Adder Tool
+# Store Product Automator
 
-A local Admin Dashboard to manage Amazon products in a Google Sheet.
+A local Admin Dashboard to manage products in a Google Sheet.
 
 ## Features
-- **Scrape Amazon**: Paste a URL to automatically fetch Title, Price, and Image.
+- **Scrape Product**: Paste a URL to automatically fetch Title, Price, and Image.
 - **Google Sheets Integration**: Add and Delete products directly from the dashboard.
 - **Premium UI**: Dark mode, glassmorphism, and responsive design.
 

@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 
-export async function scrapeAmazonProduct(url: string) {
+export async function scrapeProduct(url: string) {
     let browser = null;
     try {
         browser = await puppeteer.launch({

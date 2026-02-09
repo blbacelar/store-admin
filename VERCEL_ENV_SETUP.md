@@ -1,6 +1,6 @@
 # Quick Reference: Vercel Environment Variables
 
-To deploy your Amazon Automator with MongoDB, you need to set the following environment variables in Vercel.
+To deploy your Store Automator with MongoDB, you need to set the following environment variables in Vercel.
 
 ## 1. DATABASE_URL
 **Description**: Your MongoDB connection string.
