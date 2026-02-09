@@ -76,7 +76,7 @@ export default function LoginPage() {
                         disabled={isLoading}
                     >
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <div className="mr-2 h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center font-bold text-[10px]">G</div>}
-                        {mounted ? t('continue_google') : 'Continue with SSO'}
+                        {mounted ? t('continue_google') : 'Continue with Google'}
                     </Button>
 
                     <div className="relative">
@@ -131,8 +131,13 @@ export default function LoginPage() {
                         </p>
                     </div>
                 </CardContent>
-                <div className="mt-6 text-center text-xs text-muted-foreground">
+                <div className="mt-6 text-center text-xs text-muted-foreground space-y-2">
                     <p>Private Project - Authorized Access Only</p>
+                    <div className="flex justify-center space-x-4">
+                        <a href="/privacy" className="hover:underline hover:text-primary">Privacy Policy</a>
+                        <span>•</span>
+                        <a href="/terms" className="hover:underline hover:text-primary">Terms of Service</a>
+                    </div>
                 </div>
             </Card>
         </div>
