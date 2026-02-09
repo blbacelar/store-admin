@@ -7,8 +7,8 @@ import AuthContext from "@/context/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Amazon Product Automator",
-  description: "Admin Dashboard for managing Amazon Products",
+  title: "Store Automator",
+  description: "Admin Dashboard for managing Products",
 };
 
 export default function RootLayout({

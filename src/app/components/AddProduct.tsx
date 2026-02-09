@@ -60,7 +60,7 @@ export default function AddProduct({ onAdd }: { onAdd: (product: any) => Promise
                         type="text"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
-                        placeholder={mounted ? t('url_placeholder') : 'Paste Amazon Product URL...'}
+                        placeholder={mounted ? t('url_placeholder') : 'Paste Product URL...'}
                         className="flex-1"
                     />
                     <Button onClick={handleScrape} disabled={loading} className="min-w-[100px]">

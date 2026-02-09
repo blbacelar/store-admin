@@ -67,7 +67,7 @@ export default function SetupStorePage() {
                         <div className="space-y-2">
                             <Input
                                 type="text"
-                                placeholder={mounted ? t('store_name_placeholder') : 'Store Name (e.g. My Amazon Store)'}
+                                placeholder={mounted ? t('store_name_placeholder') : 'Store Name (e.g. My Store)'}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 disabled={isLoading}

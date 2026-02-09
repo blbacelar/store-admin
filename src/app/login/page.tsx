@@ -62,7 +62,7 @@ export default function LoginPage() {
             <Card className="w-full max-w-md shadow-2xl border-primary/20 bg-card/50 backdrop-blur-sm">
                 <CardHeader className="space-y-1 text-center">
                     <CardTitle className="text-3xl font-bold tracking-tight text-primary">
-                        {mounted ? t('login_title') : 'Amazon Admin'}
+                        {mounted ? t('login_title') : 'Store Admin'}
                     </CardTitle>
                     <CardDescription>
                         {mounted ? t('login_sub') : 'Sign in to your account to continue'}

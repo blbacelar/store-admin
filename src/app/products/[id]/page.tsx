@@ -355,7 +355,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             onClick={() => window.open(product.url, '_blank')}
                                         >
                                             <ExternalLink className="mr-2 h-4 w-4" />
-                                            {mounted ? t('amazon_view') : 'View on Amazon'}
+                                            {mounted ? t('amazon_view') : 'View Product'}
                                         </Button>
                                     )}
                                 </div>
