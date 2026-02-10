@@ -76,7 +76,9 @@ export default function Home() {
         body: JSON.stringify({ ...product, storeId: activeStore.id })
       });
       if (res.ok) {
-        fetchProducts();
+        const newProduct = await res.json();
+        // Redirect to product detail page to assign category/branch
+        router.push(`/products/${newProduct.id}`);
       } else {
         alert('Failed to save product to database. Please check the console for details.');
       }
@@ -129,9 +131,12 @@ export default function Home() {
               <p className="text-muted-foreground text-lg mt-2 font-medium">
                 {mounted ? t('dashboard_sub') : 'Automate your product tracking workflow'}
               </p>
-              <div className="mt-6">
+              <div className="mt-6 flex gap-4 justify-center">
                 <Link href="/categories">
                   <Button variant="outline">{mounted ? t('manage_categories') : 'Manage Categories'}</Button>
+                </Link>
+                <Link href="/branches">
+                  <Button variant="outline">Manage Branches</Button>
                 </Link>
               </div>
             </div>

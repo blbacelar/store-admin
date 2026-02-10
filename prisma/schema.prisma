@@ -63,6 +63,7 @@ model Store {
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   products   Product[]
   categories Category[]
+  branches   Branch[]
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
@@ -87,6 +88,8 @@ model Product {
   category     Category? @relation(fields: [categoryId], references: [id])
   storeId      String?   @db.ObjectId
   store        Store?    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  branchId     String?   @db.ObjectId
+  branch       Branch?   @relation(fields: [branchId], references: [id])
   imageUrl     String
   affiliateUrl String
   archived     Boolean   @default(false)
@@ -107,4 +110,16 @@ model Category {
 
   @@unique([name, storeId])
   @@map("categories")
+}
+
+model Branch {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  storeId   String    @db.ObjectId
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("branches")
 }

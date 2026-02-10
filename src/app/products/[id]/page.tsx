@@ -4,10 +4,15 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ExternalLink, Loader2, Tag, Package, Edit, Save, X } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Loader2, Tag, Package, Edit, Save, X, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Category {
+    id: string;
+    name: string;
+}
+
+interface Branch {
     id: string;
     name: string;
 }
@@ -18,7 +23,9 @@ interface Product {
     title: string;
     price: string;
     category: string;
-    categoryId?: string; // Add categoryId
+    categoryId?: string;
+    branchId?: string;
+    branchName?: string;
     image: string;
     url: string;
 }
@@ -34,12 +41,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const [error, setError] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
+
+    // Edit states
     const [editedTitle, setEditedTitle] = useState('');
     const [editedCategoryId, setEditedCategoryId] = useState('');
+    const [editedBranchId, setEditedBranchId] = useState('');
+
+    // Data lists
     const [categories, setCategories] = useState<Category[]>([]);
+    const [branches, setBranches] = useState<Branch[]>([]);
+
+    // Category creation
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [creatingCategoryLoading, setCreatingCategoryLoading] = useState(false);
+
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -60,6 +76,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             if (Array.isArray(data) && data.length > 0) {
                 setActiveStore(data[0]);
                 fetchCategories(data[0].id);
+                fetchBranches(data[0].id);
             } else {
                 router.push('/setup-store');
             }
@@ -78,6 +95,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             setProduct(data);
             setEditedTitle(data.title);
             setEditedCategoryId(data.categoryId || '');
+            setEditedBranchId(data.branchId || '');
         } catch (err: any) {
             setError(err.message || t('fetch_error'));
         } finally {
@@ -100,6 +118,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         }
     };
 
+    const fetchBranches = async (storeId?: string) => {
+        const id = storeId || activeStore?.id;
+        if (!id) return;
+
+        try {
+            const res = await fetch(`/api/branches?storeId=${id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setBranches(data);
+            }
+        } catch (err) {
+            console.error('Failed to load branches', err);
+        }
+    };
+
     const handleEdit = () => {
         setIsEditing(true);
     };
@@ -109,6 +142,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         if (product) {
             setEditedTitle(product.title);
             setEditedCategoryId(product.categoryId || '');
+            setEditedBranchId(product.branchId || '');
             setIsCreatingCategory(false);
             setNewCategoryName('');
         }
@@ -124,7 +158,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: editedTitle,
-                    categoryId: editedCategoryId // Send categoryId
+                    categoryId: editedCategoryId,
+                    branchId: editedBranchId
                 })
             });
 
@@ -132,15 +167,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 throw new Error('Failed to update product');
             }
 
-            // Find category name for display logic update
+            // Find names for display
             const newCategoryName = categories.find(c => c.id === editedCategoryId)?.name || t('uncategorized');
+            const newBranchName = branches.find(b => b.id === editedBranchId)?.name;
 
             // Update local state
             setProduct({
                 ...product,
                 title: editedTitle,
                 categoryId: editedCategoryId,
-                category: newCategoryName
+                category: newCategoryName,
+                branchId: editedBranchId,
+                branchName: newBranchName
             });
             setIsEditing(false);
         } catch (err: any) {
@@ -267,6 +305,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     <p className="text-3xl font-bold">{product.price || 'N/A'}</p>
                                 </div>
 
+                                {/* Category Section */}
                                 <div>
                                     <h3 className="text-sm font-medium text-muted-foreground mb-2">{mounted ? t('category_label') : 'Category'}</h3>
                                     {isEditing ? (
@@ -347,6 +386,30 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     )}
                                 </div>
 
+                                {/* Branch Section */}
+                                <div>
+                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{mounted ? t('branch_label') : 'Branch'}</h3>
+                                    {isEditing ? (
+                                        <div className="space-y-2">
+                                            <select
+                                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                value={editedBranchId}
+                                                onChange={(e) => setEditedBranchId(e.target.value)}
+                                            >
+                                                <option value="">{mounted ? 'Select Branch...' : 'Select Branch...'}</option>
+                                                {branches.map(b => (
+                                                    <option key={b.id} value={b.id}>{b.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ) : (
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
+                                            <MapPin className="h-4 w-4" />
+                                            <span>{product.branchName || 'No Branch'}</span>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="pt-4">
                                     {product.url && product.url !== '#' && (
                                         <Button
@@ -380,6 +443,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         {isEditing
                                             ? (categories.find(c => c.id === editedCategoryId)?.name || (mounted ? t('uncategorized') : 'Uncategorized'))
                                             : (product.category || (mounted ? t('uncategorized') : 'Uncategorized'))
+                                        }
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b">
+                                    <span className="text-muted-foreground">{mounted ? t('branch_label') : 'Branch'}</span>
+                                    <span className="font-medium">
+                                        {isEditing
+                                            ? (branches.find(b => b.id === editedBranchId)?.name || 'No Branch')
+                                            : (product.branchName || 'No Branch')
                                         }
                                     </span>
                                 </div>
