@@ -136,7 +136,7 @@ export default function Home() {
                   <Button variant="outline">{mounted ? t('manage_categories') : 'Manage Categories'}</Button>
                 </Link>
                 <Link href="/branches">
-                  <Button variant="outline">Manage Branches</Button>
+                  <Button variant="outline">{mounted ? t('manage_branches') : 'Manage Branches'}</Button>
                 </Link>
               </div>
             </div>

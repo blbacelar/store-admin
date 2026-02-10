@@ -13,6 +13,7 @@ const resources = {
             "manage_categories": "Manage Categories",
             "manage_branches": "Manage Branches",
             "loading_products": "Loading products...",
+            "loading": "Loading...",
             "add_product_title": "Add New Product",
             "url_placeholder": "Paste Product URL...",
             "add_button": "Add Product",
@@ -77,7 +78,12 @@ const resources = {
             "setup_store_title": "Setup Your Store",
             "setup_store_sub": "Give your store a name to start managing products",
             "store_name_placeholder": "My Store",
-            "create_store": "Create Store"
+            "create_store": "Create Store",
+            "manage_branches_sub": "Add or remove store branches",
+            "new_branch_placeholder": "New branch name...",
+            "no_branches": "No branches found.",
+            "delete_branch": "Delete Branch",
+            "delete_branch_desc": "Are you sure you want to delete the branch \"{{name}}\"? This action cannot be undone."
         }
     },
     pt: {
@@ -88,6 +94,7 @@ const resources = {
             "manage_categories": "Gerenciar Categorias",
             "manage_branches": "Gerenciar Locais",
             "loading_products": "Carregando produtos...",
+            "loading": "Carregando...",
             "add_product_title": "Adicionar Novo Produto",
             "url_placeholder": "Cole a URL do produto...",
             "add_button": "Adicionar Produto",
@@ -152,7 +159,12 @@ const resources = {
             "setup_store_title": "Configure sua Loja",
             "setup_store_sub": "Dê um nome à sua loja para começar a gerenciar produtos",
             "store_name_placeholder": "Minha Loja",
-            "create_store": "Criar Loja"
+            "create_store": "Criar Loja",
+            "manage_branches_sub": "Adicionar ou remover locais da loja",
+            "new_branch_placeholder": "Nome do novo local...",
+            "no_branches": "Nenhum local encontrado.",
+            "delete_branch": "Excluir Local",
+            "delete_branch_desc": "Tem certeza que deseja excluir o local \"{{name}}\"? Esta ação não pode ser desfeita."
         }
     }
 };

@@ -11,7 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Trash2, Loader2, ArrowLeft, Plus } from 'lucide-react';
+import { Trash2, Loader2, ArrowLeft, Plus, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
@@ -46,6 +46,10 @@ export default function CategoriesPage() {
     const [addLoading, setAddLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
+
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editLoading, setEditLoading] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -129,6 +133,39 @@ export default function CategoriesPage() {
         }
     };
 
+    const startEditing = (category: Category) => {
+        setEditingId(category.id);
+        setEditName(category.name);
+    };
+
+    const cancelEditing = () => {
+        setEditingId(null);
+        setEditName('');
+    };
+
+    const saveEditing = async (id: string) => {
+        if (!editName.trim()) return;
+        setEditLoading(true);
+        try {
+            const res = await fetch(`/api/categories/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: editName })
+            });
+
+            if (!res.ok) throw new Error('Failed to update category');
+
+            setCategories(prev => prev.map(c => c.id === id ? { ...c, name: editName } : c));
+            setEditingId(null);
+            setEditName('');
+        } catch (err: any) {
+            setError(err.message || 'Failed to update category');
+        } finally {
+            setEditLoading(false);
+        }
+    };
+
+
     return (
         <main className="min-h-screen bg-background text-foreground py-12 px-4 md:px-8">
             <div className="max-w-4xl mx-auto space-y-8">
@@ -176,7 +213,7 @@ export default function CategoriesPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>{mounted ? t('name_label') : 'Name'}</TableHead>
-                                    <TableHead className="w-[100px] text-right">{mounted ? t('actions_label') : 'Actions'}</TableHead>
+                                    <TableHead className="w-[150px] text-right">{mounted ? t('actions_label') : 'Actions'}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -189,41 +226,84 @@ export default function CategoriesPage() {
                                 ) : (
                                     categories.map((cat) => (
                                         <TableRow key={cat.id}>
-                                            <TableCell className="font-medium">{cat.name}</TableCell>
+                                            <TableCell className="font-medium">
+                                                {editingId === cat.id ? (
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            value={editName}
+                                                            onChange={(e) => setEditName(e.target.value)}
+                                                            onKeyDown={(e) => e.key === 'Enter' && saveEditing(cat.id)}
+                                                            autoFocus
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    cat.name
+                                                )}
+                                            </TableCell>
                                             <TableCell className="text-right">
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
+                                                {editingId === cat.id ? (
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="default"
+                                                            size="sm"
+                                                            onClick={() => saveEditing(cat.id)}
+                                                            disabled={editLoading}
+                                                        >
+                                                            {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('save')}
+                                                        </Button>
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            onClick={cancelEditing}
+                                                            disabled={editLoading}
+                                                        >
+                                                            {t('cancel')}
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex justify-end gap-2">
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="text-muted-foreground hover:text-destructive"
-                                                            disabled={deleteLoading === cat.id}
+                                                            onClick={() => startEditing(cat)}
                                                         >
-                                                            {deleteLoading === cat.id ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <Trash2 className="h-4 w-4" />
-                                                            )}
+                                                            <Pencil className="h-4 w-4" />
                                                         </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>{t('delete_category')}</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                {t('delete_category_desc', { name: cat.name })}
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                                                            <AlertDialogAction
-                                                                onClick={() => handleDelete(cat.id)}
-                                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                                            >
-                                                                {t('delete')}
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="text-muted-foreground hover:text-destructive"
+                                                                    disabled={deleteLoading === cat.id}
+                                                                >
+                                                                    {deleteLoading === cat.id ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    )}
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>{t('delete_category')}</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        {t('delete_category_desc', { name: cat.name })}
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        onClick={() => handleDelete(cat.id)}
+                                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                                    >
+                                                                        {t('delete')}
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))

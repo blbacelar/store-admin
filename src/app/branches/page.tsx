@@ -11,7 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Trash2, Loader2, ArrowLeft, Plus, Copy, Check } from 'lucide-react';
+import { Trash2, Loader2, ArrowLeft, Plus, Copy, Check, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
@@ -44,6 +44,10 @@ export default function BranchesPage() {
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
+
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editLoading, setEditLoading] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -108,14 +112,22 @@ export default function BranchesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        // Placeholder for delete functionality if we add it to API later
-        // For now, API only has GET and POST based on previous step
-        // I will add Client-side optimism or just alert not implemented if API is missing DELETE
-        // Note: I implemented GET and POST in route.ts. DELETE is missing in route.ts. 
-        // I'll skip DELETE implementation in UI for now or add it to API.
-        // Let's add DELETE to API in a subsequent step if critical, but user didn't explicitly ask for Delete.
-        // I'll leave the button but make it do nothing or show "Not implemented"
-        alert("Delete not implemented yet");
+        setDeleteLoading(id);
+        setError('');
+        try {
+            const res = await fetch(`/api/branches/${id}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to delete branch');
+
+            // Success
+            setBranches(prev => prev.filter(b => b.id !== id));
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setDeleteLoading(null);
+        }
     };
 
     const handleCopy = (id: string) => {
@@ -124,15 +136,47 @@ export default function BranchesPage() {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const startEditing = (branch: Branch) => {
+        setEditingId(branch.id);
+        setEditName(branch.name);
+    };
+
+    const cancelEditing = () => {
+        setEditingId(null);
+        setEditName('');
+    };
+
+    const saveEditing = async (id: string) => {
+        if (!editName.trim()) return;
+        setEditLoading(true);
+        try {
+            const res = await fetch(`/api/branches/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: editName })
+            });
+
+            if (!res.ok) throw new Error('Failed to update branch');
+
+            setBranches(prev => prev.map(b => b.id === id ? { ...b, name: editName } : b));
+            setEditingId(null);
+            setEditName('');
+        } catch (err: any) {
+            setError(err.message || 'Failed to update branch');
+        } finally {
+            setEditLoading(false);
+        }
+    };
+
     return (
         <main className="min-h-screen bg-background text-foreground py-12 px-4 md:px-8">
             <div className="max-w-4xl mx-auto space-y-8">
                 <header className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-primary">
-                            {activeStore ? `${activeStore.name} - Branches` : 'Manage Branches'}
+                            {activeStore ? `${activeStore.name} - ${t('manage_branches')}` : t('manage_branches')}
                         </h1>
-                        <p className="text-muted-foreground">{mounted ? 'Add or remove store branches' : 'Loading...'}</p>
+                        <p className="text-muted-foreground">{mounted ? t('manage_branches_sub') : t('loading')}</p>
                     </div>
                     <Link href="/">
                         <Button variant="outline">
@@ -145,7 +189,7 @@ export default function BranchesPage() {
                 <div className="bg-card rounded-lg border shadow-sm p-6">
                     <div className="flex gap-4 mb-8">
                         <Input
-                            placeholder={mounted ? 'New branch name...' : 'New branch name...'}
+                            placeholder={mounted ? t('new_branch_placeholder') : 'New branch name...'}
                             value={newBranch}
                             onChange={(e) => setNewBranch(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
@@ -172,14 +216,14 @@ export default function BranchesPage() {
                                 <TableRow>
                                     <TableHead>ID</TableHead>
                                     <TableHead>{mounted ? t('name_label') : 'Name'}</TableHead>
-                                    <TableHead className="w-[100px] text-right">{mounted ? t('actions_label') : 'Actions'}</TableHead>
+                                    <TableHead className="w-[150px] text-right">{mounted ? t('actions_label') : 'Actions'}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {branches.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={2} className="text-center text-muted-foreground h-24">
-                                            {mounted ? 'No branches found.' : 'No branches found.'}
+                                        <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                                            {mounted ? t('no_branches') : 'No branches found.'}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -199,18 +243,84 @@ export default function BranchesPage() {
                                                     </Button>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="font-medium">{branch.name}</TableCell>
+                                            <TableCell className="font-medium">
+                                                {editingId === branch.id ? (
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            value={editName}
+                                                            onChange={(e) => setEditName(e.target.value)}
+                                                            onKeyDown={(e) => e.key === 'Enter' && saveEditing(branch.id)}
+                                                            autoFocus
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    branch.name
+                                                )}
+                                            </TableCell>
                                             <TableCell className="text-right">
-                                                {/* 
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-muted-foreground hover:text-destructive"
-                                                    onClick={() => handleDelete(branch.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                                */}
+                                                {editingId === branch.id ? (
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="default"
+                                                            size="sm"
+                                                            onClick={() => saveEditing(branch.id)}
+                                                            disabled={editLoading}
+                                                        >
+                                                            {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('save')}
+                                                        </Button>
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            onClick={cancelEditing}
+                                                            disabled={editLoading}
+                                                        >
+                                                            {t('cancel')}
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => startEditing(branch)}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="text-muted-foreground hover:text-destructive"
+                                                                    disabled={deleteLoading === branch.id}
+                                                                >
+                                                                    {deleteLoading === branch.id ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : (
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    )}
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>{t('delete_branch')}</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        {t('delete_branch_desc', { name: branch.name })}
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        onClick={() => handleDelete(branch.id)}
+                                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                                    >
+                                                                        {t('delete')}
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))

@@ -28,6 +28,7 @@ interface Product {
     branchName?: string;
     image: string;
     url: string;
+    description?: string;
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -44,6 +45,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     // Edit states
     const [editedTitle, setEditedTitle] = useState('');
+    const [editedDescription, setEditedDescription] = useState('');
     const [editedCategoryId, setEditedCategoryId] = useState('');
     const [editedBranchId, setEditedBranchId] = useState('');
 
@@ -94,6 +96,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             const data = await res.json();
             setProduct(data);
             setEditedTitle(data.title);
+            setEditedDescription(data.description || '');
             setEditedCategoryId(data.categoryId || '');
             setEditedBranchId(data.branchId || '');
         } catch (err: any) {
@@ -141,6 +144,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setIsEditing(false);
         if (product) {
             setEditedTitle(product.title);
+            setEditedDescription(product.description || '');
             setEditedCategoryId(product.categoryId || '');
             setEditedBranchId(product.branchId || '');
             setIsCreatingCategory(false);
@@ -158,6 +162,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: editedTitle,
+                    description: editedDescription,
                     categoryId: editedCategoryId,
                     branchId: editedBranchId
                 })
@@ -175,6 +180,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             setProduct({
                 ...product,
                 title: editedTitle,
+                description: editedDescription,
                 categoryId: editedCategoryId,
                 category: newCategoryName,
                 branchId: editedBranchId,
@@ -303,6 +309,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <div>
                                     <h3 className="text-sm font-medium text-muted-foreground mb-2">{mounted ? t('price_label') : 'Price'}</h3>
                                     <p className="text-3xl font-bold">{product.price || 'N/A'}</p>
+                                </div>
+
+                                {/* Description Section */}
+                                <div>
+                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
+                                    {isEditing ? (
+                                        <textarea
+                                            value={editedDescription}
+                                            onChange={(e) => setEditedDescription(e.target.value)}
+                                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                            rows={4}
+                                        />
+                                    ) : (
+                                        <p className="text-sm whitespace-pre-wrap">{product.description || 'No description available.'}</p>
+                                    )}
                                 </div>
 
                                 {/* Category Section */}

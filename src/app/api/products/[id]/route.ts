@@ -9,7 +9,7 @@ export async function PUT(
     try {
         const { id: idParam } = await params;
         const body = await request.json();
-        const { title, categoryId, branchId } = body;
+        const { title, categoryId, branchId, description } = body;
         const sanitizedTitle = title?.trim();
         if (!sanitizedTitle) {
             return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
@@ -22,7 +22,8 @@ export async function PUT(
             data: {
                 name: sanitizedTitle,
                 categoryId: categoryId || null, // If empty string/undefined, disconnect category
-                branchId: branchId || null
+                branchId: branchId || null,
+                description: description || null
             }
         });
 
@@ -66,6 +67,7 @@ export async function GET(
             branchId: product.branchId,
             image: product.imageUrl,
             url: product.affiliateUrl,
+            description: product.description,
             archived: product.archived
         };
 
