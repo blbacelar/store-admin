@@ -60,17 +60,11 @@ export default function LoginPage() {
         }
     };
 
-    const handleGoogleSignIn = async () => {
+    const handleGoogleSignIn = () => {
         setIsLoading(true);
-        try {
-            await signIn("google", {
-                callbackUrl: "/",
-                redirect: true
-            });
-        } catch (error) {
-            console.error('Google sign-in error:', error);
-            setIsLoading(false);
-        }
+        signIn("google", {
+            callbackUrl: "/"
+        });
     };
 
     return (

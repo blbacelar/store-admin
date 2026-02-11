@@ -56,6 +56,31 @@ export const authOptions: NextAuthOptions = {
     pages: {
         signIn: "/login",
     },
+    callbacks: {
+        async signIn({ user, account, profile }) {
+            console.log('SignIn callback - User:', user?.email, 'Account:', account?.provider);
+            return true;
+        },
+        async redirect({ url, baseUrl }) {
+            console.log('Redirect callback - URL:', url, 'BaseURL:', baseUrl);
+            // Always redirect to dashboard after successful sign in
+            if (url.startsWith(baseUrl)) return url;
+            if (url.startsWith("/")) return `${baseUrl}${url}`;
+            return baseUrl + "/";
+        },
+        async jwt({ token, user, account }) {
+            if (user) {
+                token.id = user.id;
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            if (session.user) {
+                (session.user as any).id = token.id;
+            }
+            return session;
+        }
+    },
     debug: process.env.NODE_ENV === "development",
     session: {
         strategy: "jwt",
