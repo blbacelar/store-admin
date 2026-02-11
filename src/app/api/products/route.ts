@@ -1,20 +1,35 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
+import { requireAuth } from '@/app/lib/apiAuth';
 
 export async function GET(request: Request) {
+    // Check authentication
+    const auth = await requireAuth();
+    if (!auth.authorized) {
+        return auth.response;
+    }
+
     try {
         const { searchParams } = new URL(request.url);
         const storeId = searchParams.get('storeId');
+        const branchId = searchParams.get('branchId');
 
         if (!storeId) {
             return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
         }
 
+        const whereClause: any = {
+            storeId: storeId
+        };
+
+        // Filter by branchId if provided
+        if (branchId) {
+            whereClause.branchId = branchId;
+        }
+
         const products = await prisma.product.findMany({
-            where: {
-                storeId: storeId
-            },
+            where: whereClause,
             include: {
                 category: true
             },
@@ -42,8 +57,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    // Check authentication
+    const auth = await requireAuth();
+    if (!auth.authorized) {
+        return auth.response;
+    }
+
     try {
-        const { title, price, image, url, storeId } = await request.json();
+        const { title, price, image, url, storeId, branchId } = await request.json();
 
         // Validate
         if (!title || !url || !storeId) {
@@ -66,7 +87,14 @@ export async function POST(request: Request) {
                 cleaned = cleaned.replace(/,/g, '');
             }
             parsedPrice = parseFloat(cleaned);
-            if (isNaN(parsedPrice)) parsedPrice = 0;
+
+            if (isNaN(parsedPrice)) {
+                console.warn(`Failed to parse price: "${price}". Setting to 0.`);
+                parsedPrice = 0;
+            } else if (parsedPrice < 0) {
+                console.warn(`Negative price detected: ${parsedPrice}. Setting to 0.`);
+                parsedPrice = 0;
+            }
         }
 
         // Final check for title after potential sanitization (future-proofing)
@@ -75,15 +103,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
         }
 
+        const productData: any = {
+            name: sanitizedTitle,
+            price: parsedPrice,
+            imageUrl: image || '',
+            affiliateUrl: url,
+            storeId: storeId,
+            archived: false
+        };
+
+        // Add branchId if provided
+        if (branchId) {
+            productData.branchId = branchId;
+        }
+
         const newProduct = await prisma.product.create({
-            data: {
-                name: sanitizedTitle,
-                price: parsedPrice,
-                imageUrl: image || '',
-                affiliateUrl: url,
-                storeId: storeId,
-                archived: false
-            }
+            data: productData
         });
 
         notifyStoreService();
@@ -95,6 +130,12 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    // Check authentication
+    const auth = await requireAuth();
+    if (!auth.authorized) {
+        return auth.response;
+    }
+
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');

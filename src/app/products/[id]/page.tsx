@@ -70,6 +70,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         fetchProduct();
     }, [resolvedParams.id]);
 
+    // Fetch categories when product and activeStore are both available
+    useEffect(() => {
+        if (product && activeStore) {
+            fetchCategories(activeStore.id, product.branchId);
+        }
+    }, [product, activeStore]);
+
     const checkStores = async () => {
         try {
             const res = await fetch('/api/stores');
@@ -77,7 +84,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
             if (Array.isArray(data) && data.length > 0) {
                 setActiveStore(data[0]);
-                fetchCategories(data[0].id);
+                // Don't fetch categories here - wait for product to load with branchId
                 fetchBranches(data[0].id);
             } else {
                 router.push('/setup-store');
@@ -90,28 +97,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const fetchProduct = async () => {
         try {
             const res = await fetch(`/api/products/${resolvedParams.id}`);
-            if (!res.ok) {
-                throw new Error('Product not found');
+            if (res.ok) {
+                const data = await res.json();
+                setProduct(data);
+                setEditedTitle(data.title);
+                setEditedDescription(data.description || '');
+                setEditedCategoryId(data.categoryId || '');
+                setEditedBranchId(data.branchId || '');
+            } else {
+                setError('Product not found');
             }
-            const data = await res.json();
-            setProduct(data);
-            setEditedTitle(data.title);
-            setEditedDescription(data.description || '');
-            setEditedCategoryId(data.categoryId || '');
-            setEditedBranchId(data.branchId || '');
-        } catch (err: any) {
-            setError(err.message || t('fetch_error'));
+        } catch (err) {
+            setError('Failed to load product');
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchCategories = async (storeId?: string) => {
+    const fetchCategories = async (storeId?: string, branchId?: string) => {
         const id = storeId || activeStore?.id;
+        const branch = branchId || product?.branchId;
         if (!id) return;
 
         try {
-            const res = await fetch(`/api/categories?storeId=${id}`);
+            let url = `/api/categories?storeId=${id}`;
+            if (branch) {
+                url += `&branchId=${branch}`;
+            }
+            const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
                 setCategories(data);
@@ -241,22 +254,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         {mounted ? t('back_dashboard') : 'Back to Dashboard'}
                     </Button>
 
-                    {!isEditing ? (
+                    {!isEditing && (
                         <Button onClick={handleEdit} variant="outline">
                             <Edit className="mr-2 h-4 w-4" />
                             {mounted ? t('edit') : 'Edit'}
                         </Button>
-                    ) : (
-                        <div className="flex gap-2">
-                            <Button onClick={handleCancel} variant="outline" disabled={saving}>
-                                <X className="mr-2 h-4 w-4" />
-                                {mounted ? t('cancel') : 'Cancel'}
-                            </Button>
-                            <Button onClick={handleSave} disabled={saving}>
-                                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                {mounted ? t('save') : 'Save'}
-                            </Button>
-                        </div>
                     )}
                 </div>
 
@@ -306,11 +308,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                             {/* Details Section */}
                             <div className="space-y-6">
-                                <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{mounted ? t('price_label') : 'Price'}</h3>
-                                    <p className="text-3xl font-bold">{product.price || 'N/A'}</p>
-                                </div>
-
                                 {/* Description Section */}
                                 <div>
                                     <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
@@ -416,6 +413,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                                                 value={editedBranchId}
                                                 onChange={(e) => setEditedBranchId(e.target.value)}
+                                                disabled={true}
                                             >
                                                 <option value="">{mounted ? 'Select Branch...' : 'Select Branch...'}</option>
                                                 {branches.map(b => (
@@ -431,7 +429,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     )}
                                 </div>
 
-                                <div className="pt-4">
+                                {/* Action Buttons */}
+                                <div className="pt-4 space-y-2">
+                                    {isEditing && (
+                                        <div className="flex gap-2 mb-2">
+                                            <Button onClick={handleCancel} variant="outline" disabled={saving} className="flex-1">
+                                                <X className="mr-2 h-4 w-4" />
+                                                {mounted ? t('cancel') : 'Cancel'}
+                                            </Button>
+                                            <Button onClick={handleSave} disabled={saving} className="flex-1">
+                                                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                                {mounted ? t('save') : 'Save'}
+                                            </Button>
+                                        </div>
+                                    )}
                                     {product.url && product.url !== '#' && (
                                         <Button
                                             variant="default"
@@ -453,10 +464,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <div className="flex justify-between items-center py-2 border-b">
                                     <span className="text-muted-foreground">{mounted ? t('name_label') : 'Title'}</span>
                                     <span className="font-medium text-right max-w-md">{isEditing ? editedTitle : product.title}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">{mounted ? t('price_label') : 'Price'}</span>
-                                    <span className="font-medium">{product.price || 'N/A'}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-b">
                                     <span className="text-muted-foreground">{mounted ? t('category_label') : 'Category'}</span>

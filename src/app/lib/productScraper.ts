@@ -2,12 +2,25 @@ import puppeteer from 'puppeteer';
 
 export async function scrapeProduct(url: string) {
     let browser = null;
+    let page = null;
+
     try {
         browser = await puppeteer.launch({
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080']
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--window-size=1920,1080',
+                '--disable-dev-shm-usage', // Prevent memory issues
+                '--disable-gpu'
+            ]
         });
-        const page = await browser.newPage();
+
+        page = await browser.newPage();
+
+        // Set timeout for the entire page
+        page.setDefaultTimeout(30000);
+        page.setDefaultNavigationTimeout(30000);
 
         // Set User Agent to avoid detection
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36');
@@ -71,6 +84,17 @@ export async function scrapeProduct(url: string) {
         console.error('Scraper Error:', error);
         return null;
     } finally {
-        if (browser) await browser.close();
+        // Ensure cleanup even if errors occur
+        try {
+            if (page) await page.close();
+        } catch (e) {
+            console.error('Error closing page:', e);
+        }
+
+        try {
+            if (browser) await browser.close();
+        } catch (e) {
+            console.error('Error closing browser:', e);
+        }
     }
 }

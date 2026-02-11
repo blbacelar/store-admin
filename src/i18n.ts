@@ -8,7 +8,8 @@ const resources = {
     en: {
         translation: {
             "all": "All",
-            "dashboard_title": "My Dashboard",
+            "dashboard_title": "Dashboard",
+            "dashboard_subtitle": "Manage your products",
             "dashboard_sub": "Automate your product tracking workflow",
             "manage_categories": "Manage Categories",
             "manage_branches": "Manage Branches",
@@ -83,14 +84,21 @@ const resources = {
             "new_branch_placeholder": "New branch name...",
             "no_branches": "No branches found.",
             "delete_branch": "Delete Branch",
-            "delete_branch_desc": "Are you sure you want to delete the branch \"{{name}}\"? This action cannot be undone."
+            "delete_branch_desc": "Are you sure you want to delete the branch \"{{name}}\"? This action cannot be undone.",
+            "default_branch": "Default Branch for New Products",
+            "no_branch": "No Branch",
+            "product_saved": "Product saved successfully",
+            "save_error": "Failed to save product",
+            "categories": "Categories",
+            "branches": "Branches"
         }
     },
     pt: {
         translation: {
             "all": "Todos",
-            "dashboard_title": "Meu Painel",
-            "dashboard_sub": "Automatize seu fluxo de triagem de produtos",
+            "dashboard_title": "Painel",
+            "dashboard_subtitle": "Gerencie seus produtos",
+            "dashboard_sub": "Automatize seu fluxo de rastreamento de produtos",
             "manage_categories": "Gerenciar Categorias",
             "manage_branches": "Gerenciar Locais",
             "loading_products": "Carregando produtos...",
@@ -164,7 +172,13 @@ const resources = {
             "new_branch_placeholder": "Nome do novo local...",
             "no_branches": "Nenhum local encontrado.",
             "delete_branch": "Excluir Local",
-            "delete_branch_desc": "Tem certeza que deseja excluir o local \"{{name}}\"? Esta ação não pode ser desfeita."
+            "delete_branch_desc": "Tem certeza que deseja excluir o local \"{{name}}\"? Esta ação não pode ser desfeita.",
+            "default_branch": "Local Padrão para Novos Produtos",
+            "no_branch": "Sem Local",
+            "product_saved": "Produto salvo com sucesso",
+            "save_error": "Falha ao salvar produto",
+            "categories": "Categorias",
+            "branches": "Locais"
         }
     }
 };

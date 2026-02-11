@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
+import { requireAuth } from '@/app/lib/apiAuth';
 
 export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    // Check authentication
+    const auth = await requireAuth();
+    if (!auth.authorized) {
+        return auth.response;
+    }
+
     try {
         const { id: idParam } = await params;
         const body = await request.json();

@@ -1,19 +1,34 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
+import { requireAuth } from '@/app/lib/apiAuth';
 
 export async function GET(request: Request) {
+    // Check authentication
+    const auth = await requireAuth();
+    if (!auth.authorized) {
+        return auth.response;
+    }
+
     try {
         const { searchParams } = new URL(request.url);
         const storeId = searchParams.get('storeId');
+        const branchId = searchParams.get('branchId');
 
         if (!storeId) {
             return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
         }
 
+        const whereClause: any = {
+            storeId: storeId
+        };
+
+        // Filter by branchId if provided
+        if (branchId) {
+            whereClause.branchId = branchId;
+        }
+
         const categories = await prisma.category.findMany({
-            where: {
-                storeId: storeId
-            },
+            where: whereClause,
             orderBy: {
                 name: 'asc'
             }
@@ -26,6 +41,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    // Check authentication
+    const auth = await requireAuth();
+    if (!auth.authorized) {
+        return auth.response;
+    }
+
     try {
         const { name, storeId } = await request.json();
 

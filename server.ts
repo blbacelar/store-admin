@@ -30,8 +30,11 @@ app.prepare().then(() => {
     // Initialize Socket.IO
     const io = new Server(server, {
         cors: {
-            origin: "*", // Allow all origins for simplicity in dev, refine for prod
-            methods: ["GET", "POST"]
+            origin: process.env.NODE_ENV === 'production'
+                ? [process.env.NEXT_PUBLIC_APP_URL || 'https://yourdomain.com']
+                : ["http://localhost:3000", "http://localhost:3002", "http://localhost:3005"],
+            methods: ["GET", "POST"],
+            credentials: true
         }
     });
 

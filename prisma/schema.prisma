@@ -97,6 +97,9 @@ model Product {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  @@index([storeId, archived])
+  @@index([branchId])
+  @@index([categoryId])
   @@map("products")
 }
 
@@ -105,22 +108,27 @@ model Category {
   name      String
   storeId   String    @db.ObjectId
   store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  branchId  String?   @db.ObjectId
+  branch    Branch?   @relation(fields: [branchId], references: [id], onDelete: Cascade)
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@unique([name, storeId])
+  @@unique([name, branchId])
+  @@index([storeId])
+  @@index([branchId])
   @@map("categories")
 }
 
 model Branch {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  storeId   String    @db.ObjectId
-  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  storeId    String     @db.ObjectId
+  store      Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products   Product[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  categories Category[]
 
   @@map("branches")
 }

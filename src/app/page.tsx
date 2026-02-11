@@ -1,23 +1,24 @@
 'use client';
+
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { useBranch } from '@/context/BranchContext';
+import NavBar from './components/NavBar';
 import AddProduct from './components/AddProduct';
 import ProductList from './components/ProductList';
-import ThemeToggle from './components/ThemeToggle';
-import LanguageToggle from './components/LanguageToggle';
-import { useRouter } from 'next/navigation';
-import { Loader2, Package } from 'lucide-react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useTranslation } from 'react-i18next';
-import { signOut } from 'next-auth/react';
-import { LogOut } from 'lucide-react';
+import { Loader2, Settings } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [products, setProducts] = useState<any[]>([]);
+  const { branches, selectedBranchId, setSelectedBranchId, fetchBranches } = useBranch();
   const [stores, setStores] = useState<any[]>([]);
   const [activeStore, setActiveStore] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -34,9 +35,37 @@ export default function Home() {
       if (Array.isArray(data) && data.length > 0) {
         setStores(data);
         setActiveStore(data[0]); // Default to first store
-        fetchProducts(data[0].id);
+        // Don't fetch products here - fetchBranches will do it after selecting first branch
+        fetchBranches(data[0].id);
       } else {
-        router.push('/setup-store');
+        // Auto-assign user to default store
+        try {
+          const assignRes = await fetch('/api/stores/auto-assign', {
+            method: 'POST'
+          });
+
+          if (assignRes.ok) {
+            // Retry fetching stores after assignment
+            const retryRes = await fetch('/api/stores');
+            const retryData = await retryRes.json();
+
+            if (Array.isArray(retryData) && retryData.length > 0) {
+              setStores(retryData);
+              setActiveStore(retryData[0]);
+              fetchBranches(retryData[0].id);
+            } else {
+              toast.error('Failed to access store. Please contact support.');
+              setLoading(false);
+            }
+          } else {
+            toast.error('Failed to assign store. Please contact support.');
+            setLoading(false);
+          }
+        } catch (assignError) {
+          console.error('Failed to auto-assign store', assignError);
+          toast.error('Failed to setup your account. Please contact support.');
+          setLoading(false);
+        }
       }
     } catch (error) {
       console.error('Failed to check stores', error);
@@ -45,12 +74,18 @@ export default function Home() {
   };
 
   // Fetch products
-  const fetchProducts = async (storeId?: string) => {
+  const fetchProducts = async (storeId?: string, branchId?: string) => {
     const id = storeId || activeStore?.id;
+    const branch = branchId || selectedBranchId;
     if (!id) return;
 
     try {
-      const res = await fetch(`/api/products?storeId=${id}`, {
+      setLoading(true);
+      let url = `/api/products?storeId=${id}`;
+      if (branch) {
+        url += `&branchId=${branch}`;
+      }
+      const res = await fetch(url, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache'
@@ -67,24 +102,32 @@ export default function Home() {
     }
   };
 
+  // Watch for selectedBranchId changes from context
+  useEffect(() => {
+    if (selectedBranchId && activeStore) {
+      fetchProducts(activeStore.id, selectedBranchId);
+    }
+  }, [selectedBranchId, activeStore]);
+
   const handleAdd = async (product: any) => {
     if (!activeStore) return;
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...product, storeId: activeStore.id })
+        body: JSON.stringify({ ...product, storeId: activeStore.id, branchId: selectedBranchId || undefined })
       });
       if (res.ok) {
         const newProduct = await res.json();
         // Redirect to product detail page to assign category/branch
         router.push(`/products/${newProduct.id}`);
+        toast.success(t('product_saved') || 'Product saved successfully');
       } else {
-        alert('Failed to save product to database. Please check the console for details.');
+        toast.error(t('save_error') || 'Failed to save product to database.');
       }
     } catch (e) {
       console.error(e);
-      alert('Error saving product');
+      toast.error(t('save_error') || 'Error saving product');
     }
   };
 
@@ -96,49 +139,39 @@ export default function Home() {
       if (res.ok) {
         fetchProducts();
       } else {
-        alert('Failed to delete. Check console.');
+        toast.error(t('delete_error') || 'Failed to delete. Check console.');
       }
     } catch (e) {
       console.error(e);
-      alert('Error deleting product');
+      toast.error(t('delete_error') || 'Error deleting product');
     }
   };
 
   return (
     <>
-      <ThemeToggle />
-      <LanguageToggle />
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => signOut()}
-        className="fixed top-4 right-[10.5rem] z-50 h-10 w-10 border-border bg-background/50 backdrop-blur-sm hover:text-destructive transition-colors"
-        title="Sign Out"
-      >
-        <LogOut className="h-5 w-5" />
-      </Button>
+      <NavBar />
       <main className="min-h-screen bg-background text-foreground py-12 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-
-          <header className="flex flex-col items-center text-center space-y-4">
-            <div className="bg-primary/10 p-3 rounded-full">
-              <Package className="w-12 h-12 text-primary" />
-            </div>
+        <div className="max-w-6xl mx-auto space-y-8">
+          <header className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
-                {activeStore ? activeStore.name : (mounted ? t('dashboard_title') : 'My Dashboard')}
+              <h1 className="text-3xl font-bold text-primary">
+                {activeStore ? activeStore.name : (mounted ? t('dashboard_title') : 'Dashboard')}
               </h1>
-              <p className="text-muted-foreground text-lg mt-2 font-medium">
-                {mounted ? t('dashboard_sub') : 'Automate your product tracking workflow'}
-              </p>
-              <div className="mt-6 flex gap-4 justify-center">
-                <Link href="/categories">
-                  <Button variant="outline">{mounted ? t('manage_categories') : 'Manage Categories'}</Button>
-                </Link>
-                <Link href="/branches">
-                  <Button variant="outline">{mounted ? t('manage_branches') : 'Manage Branches'}</Button>
-                </Link>
-              </div>
+              <p className="text-muted-foreground">{mounted ? t('dashboard_subtitle') : 'Manage your products'}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href="/categories">
+                <Button variant="outline">
+                  <Settings className="mr-2 h-4 w-4" />
+                  {mounted ? t('categories') : 'Categories'}
+                </Button>
+              </Link>
+              <Link href="/branches">
+                <Button variant="outline">
+                  <Settings className="mr-2 h-4 w-4" />
+                  {mounted ? t('branches') : 'Branches'}
+                </Button>
+              </Link>
             </div>
           </header>
 

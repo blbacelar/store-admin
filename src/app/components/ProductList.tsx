@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'archived'>('active');
+    const [filterCategory, setFilterCategory] = useState<string>('all');
     const [localProducts, setLocalProducts] = useState<Product[]>(products);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -61,7 +63,13 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
         setLocalProducts(products);
     }, [products]);
 
-    // Filter products based on search query and status
+    // Get unique categories
+    const categories = useMemo(() => {
+        const uniqueCategories = Array.from(new Set(localProducts.map(p => p.category)));
+        return uniqueCategories.sort();
+    }, [localProducts]);
+
+    // Filter products based on search query, status, and category
     const filteredProducts = useMemo(() => {
         let result = localProducts;
 
@@ -70,6 +78,11 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
             result = result.filter(p => !p.archived);
         } else if (filterStatus === 'archived') {
             result = result.filter(p => p.archived);
+        }
+
+        // Category Filter
+        if (filterCategory !== 'all') {
+            result = result.filter(p => p.category === filterCategory);
         }
 
         // Search Filter
@@ -83,7 +96,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
         }
 
         return result;
-    }, [localProducts, searchQuery, filterStatus]);
+    }, [localProducts, searchQuery, filterStatus, filterCategory]);
 
     // Pagination
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -129,7 +142,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                     p.id === id ? { ...p, archived: currentArchived } : p
                 )
             );
-            alert('Failed to update archive status');
+            toast.error(t('archive_error') || 'Failed to update archive status');
         }
     };
 
@@ -154,7 +167,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
 
         // Delete in background
         try {
-            const res = await fetch(`/api/products?index=${deletedProduct.id}`, {
+            const res = await fetch(`/api/products?id=${deletedProduct.id}`, {
                 method: 'DELETE',
             });
 
@@ -167,11 +180,11 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
         } catch (error) {
             console.error('Delete error:', error);
             // Revert the optimistic update on error
+            // Re-insert the product at its original position
             setLocalProducts(prevProducts => {
-                // Re-insert the product at its original position
                 return [...prevProducts, deletedProduct];
             });
-            alert('Failed to delete product. Please try again.');
+            toast.error(t('delete_error') || 'Failed to delete product. Please try again.');
         }
     };
 
@@ -221,14 +234,27 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
+                                    type="text"
                                     placeholder={mounted ? t('search_placeholder') : 'Search products...'}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 w-64"
+                                    className="pl-8 w-64"
                                 />
                             </div>
+                            <select
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            >
+                                <option value="all">{mounted ? t('all') : 'All'} {mounted ? t('category_label') : 'Categories'}</option>
+                                {categories.map((category) => (
+                                    <option key={category} value={category}>
+                                        {category}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </CardHeader>
@@ -240,7 +266,6 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                                     <TableHead className="w-[80px]">ID</TableHead>
                                     <TableHead className="w-[100px]">{mounted ? t('image_label') : 'Image'}</TableHead>
                                     <TableHead>{mounted ? t('name_label') : 'Name'}</TableHead>
-                                    <TableHead className="w-[120px]">{mounted ? t('price_label') : 'Price'}</TableHead>
                                     <TableHead className="w-[150px] text-center">{mounted ? t('category_label') : 'Category'}</TableHead>
                                     <TableHead className="w-[100px]">{mounted ? t('status_label') : 'Status'}</TableHead>
                                     <TableHead className="w-[200px] text-right">{mounted ? t('actions_label') : 'Actions'}</TableHead>
@@ -249,7 +274,7 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                             <TableBody>
                                 {paginatedProducts.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                                             {t('no_products')}
                                         </TableCell>
                                     </TableRow>
@@ -271,7 +296,6 @@ export default function ProductList({ products, onDelete, onRefresh }: ProductLi
                                                     {p.title || 'No Title'}
                                                 </span>
                                             </TableCell>
-                                            <TableCell>{p.price || 'N/A'}</TableCell>
                                             <TableCell className="text-center">
                                                 <span className="inline-flex items-center justify-center px-2 py-1 rounded-full text-xs bg-secondary">
                                                     {p.category || t('uncategorized')}

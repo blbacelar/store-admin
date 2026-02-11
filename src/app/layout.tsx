@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import I18nInitializer from "@/components/I18nInitializer";
 import AuthContext from "@/context/AuthContext";
+import { BranchProvider } from "@/context/BranchContext";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,9 +39,12 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthContext>
-          <I18nInitializer>
-            {children}
-          </I18nInitializer>
+          <BranchProvider>
+            <I18nInitializer>
+              {children}
+              <Toaster position="top-center" richColors />
+            </I18nInitializer>
+          </BranchProvider>
         </AuthContext>
       </body>
     </html>
