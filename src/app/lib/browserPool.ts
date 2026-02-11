@@ -38,7 +38,7 @@ class BrowserPool {
         try {
             logger.debug('Launching new browser instance');
 
-            if (process.env.NODE_ENV === 'production') {
+            if (process.env.NODE_ENV === 'production' && process.env.DEPLOYMENT_TYPE !== 'vps') {
                 logger.debug('Using production configuration with @sparticuz/chromium');
                 const chromium = require('@sparticuz/chromium');
                 const puppeteerCore = require('puppeteer-core');
@@ -55,13 +55,14 @@ class BrowserPool {
                     headless: chromium.headless,
                 }) as unknown as Browser;
             } else {
-                // Use stealth plugin in development only
-                logger.debug('Using local configuration with puppeteer-extra and stealth plugin');
+                // Use stealth plugin in development OR VPS production
+                logger.debug('Using standard configuration with puppeteer-extra and stealth plugin');
                 const puppeteerExtra = require('puppeteer-extra');
                 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
                 puppeteerExtra.use(StealthPlugin());
 
-                this.browser = await puppeteerExtra.launch({
+                // For VPS/Docker, we might need to specify executable path if not found automatically
+                const launchOptions: any = {
                     headless: true,
                     args: [
                         '--no-sandbox',
@@ -73,7 +74,15 @@ class BrowserPool {
                         '--disable-web-security',
                         '--disable-features=IsolateOrigins,site-per-process',
                     ],
-                });
+                };
+
+                // If on VPS production, we might be using installed chrome. 
+                // Puppeteer usually finds it, or we can rely on the one installed in Docker.
+                if (process.env.DEPLOYMENT_TYPE === 'vps') {
+                    logger.debug('Running in VPS mode with relaxed sandbox');
+                }
+
+                this.browser = await puppeteerExtra.launch(launchOptions);
             }
 
             this.pageCount = 0;
