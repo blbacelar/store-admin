@@ -8,7 +8,7 @@ async function main() {
     console.log(`Updating all products to have branchId: ${BRANCH_ID}...`);
 
     try {
-        const result = await prisma.product.updateMany({
+        const result = await (prisma.product as any).updateMany({
             data: {
                 branchId: BRANCH_ID,
             },
