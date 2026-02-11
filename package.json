@@ -27,6 +27,8 @@
     "prisma": "^6.19.2",
     "puppeteer": "^24.36.1",
     "puppeteer-core": "^24.37.2",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-i18next": "^16.5.4",

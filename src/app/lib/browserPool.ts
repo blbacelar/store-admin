@@ -3,8 +3,13 @@
  * Manages a pool of browser instances to prevent memory leaks and improve performance
  */
 
-import puppeteer, { Browser, Page } from 'puppeteer';
+import { Browser, Page } from 'puppeteer';
 import { logger } from './logger';
+
+// Use puppeteer-extra with stealth plugin to bypass bot detection
+const puppeteerExtra = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+puppeteerExtra.use(StealthPlugin());
 
 class BrowserPool {
     private browser: Browser | null = null;
@@ -36,27 +41,26 @@ class BrowserPool {
         // Initialize new browser
         this.isInitializing = true;
         try {
-            logger.debug('Launching new browser instance');
+            logger.debug('Launching new browser instance with stealth plugin');
 
             if (process.env.NODE_ENV === 'production') {
                 logger.debug('Using production configuration with @sparticuz/chromium');
                 const chromium = require('@sparticuz/chromium');
-                const puppeteerCore = require('puppeteer-core');
 
                 // Optimized args for serverless environment
                 const executablePath = await chromium.executablePath();
                 logger.debug(`[BROWSER LAUNCH] Executable Path: ${executablePath}`);
                 logger.debug(`[BROWSER LAUNCH] Args: ${JSON.stringify(chromium.args)}`);
 
-                this.browser = await puppeteerCore.launch({
+                this.browser = await puppeteerExtra.launch({
                     args: chromium.args,
                     defaultViewport: chromium.defaultViewport,
                     executablePath: executablePath,
                     headless: chromium.headless,
                 }) as unknown as Browser;
             } else {
-                logger.debug('Using local configuration with puppeteer');
-                this.browser = await puppeteer.launch({
+                logger.debug('Using local configuration with puppeteer-extra');
+                this.browser = await puppeteerExtra.launch({
                     headless: true,
                     args: [
                         '--no-sandbox',
