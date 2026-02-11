@@ -37,22 +37,43 @@ class BrowserPool {
         this.isInitializing = true;
         try {
             logger.debug('Launching new browser instance');
-            this.browser = await puppeteer.launch({
-                headless: true, // Revert to headless for production compatibility
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage', // Prevent memory issues
-                    '--disable-gpu',
-                    // '--single-process', // Disabled for local debugging stability
-                    '--no-zygote',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-web-security', // Only for scraping
-                    '--disable-features=IsolateOrigins,site-per-process', // Help with redirects
-                ],
-            });
+
+            if (process.env.NODE_ENV === 'production') {
+                logger.debug('Using production configuration with @sparticuz/chromium');
+                const chromium = require('@sparticuz/chromium');
+                const puppeteerCore = require('puppeteer-core');
+
+                // Optimized args for serverless environment
+                this.browser = await puppeteerCore.launch({
+                    args: chromium.args,
+                    defaultViewport: chromium.defaultViewport,
+                    executablePath: await chromium.executablePath(),
+                    headless: chromium.headless,
+                }) as unknown as Browser;
+            } else {
+                logger.debug('Using local configuration with puppeteer');
+                this.browser = await puppeteer.launch({
+                    headless: true,
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-gpu',
+                        '--no-zygote',
+                        '--disable-accelerated-2d-canvas',
+                        '--disable-web-security',
+                        '--disable-features=IsolateOrigins,site-per-process',
+                    ],
+                });
+            }
+
             this.pageCount = 0;
             logger.debug('Browser instance launched successfully');
+
+            if (!this.browser) {
+                throw new Error('Failed to initialize browser instance');
+            }
+
             return this.browser;
         } catch (error) {
             logger.error('Failed to launch browser:', error);
