@@ -41,6 +41,29 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
 
         await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
+        // Check if we hit Amazon's bot detection page
+        const pageText = await page.evaluate(() => document.body.innerText);
+        if (pageText.includes('Continuar comprando') || pageText.includes('Continue shopping')) {
+            logger.warn('Bot detection page detected, waiting for product page...');
+
+            // Try clicking the continue button if it exists
+            try {
+                await page.click('a[href*="continue"]', { timeout: 5000 });
+                await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 });
+            } catch (e) {
+                // Button might not exist or already navigated, continue
+                logger.debug('Continue button not found or already navigated');
+            }
+
+            // Wait for product title to appear
+            try {
+                await page.waitForSelector('#productTitle', { timeout: 15000 });
+            } catch (e) {
+                logger.error('Product title never appeared after bot detection');
+                throw new Error('Amazon bot detection: product page did not load');
+            }
+        }
+
         // Extract Data
         const data = await page.evaluate(() => {
             const title = document.querySelector('#productTitle')?.textContent?.trim() ||
