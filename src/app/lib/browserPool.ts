@@ -48,6 +48,9 @@ class BrowserPool {
                     '--no-zygote', // Disable zygote process for better resource management
                     '--disable-accelerated-2d-canvas',
                     '--disable-web-security', // Only for scraping, not for browsing
+                    '--disable-features=IsolateOrigins,site-per-process', // Help with redirects
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
                 ],
             });
             this.pageCount = 0;
@@ -89,7 +92,7 @@ class BrowserPool {
 
         // Set user agent to avoid detection
         await page.setUserAgent(
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
         );
 
         // Set viewport

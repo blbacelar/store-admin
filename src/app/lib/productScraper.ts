@@ -9,7 +9,7 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
         // Get page from browser pool
         page = await browserPool.getPage();
 
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
         // Extract Data
         const data = await page.evaluate(() => {
