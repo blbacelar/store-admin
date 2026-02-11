@@ -38,19 +38,17 @@ class BrowserPool {
         try {
             logger.debug('Launching new browser instance');
             this.browser = await puppeteer.launch({
-                headless: true,
+                headless: false, // Enable for debugging as requested
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage', // Prevent memory issues
                     '--disable-gpu',
-                    '--single-process', // Important for serverless environments
-                    '--no-zygote', // Disable zygote process for better resource management
+                    // '--single-process', // Disabled for local debugging stability
+                    '--no-zygote',
                     '--disable-accelerated-2d-canvas',
-                    '--disable-web-security', // Only for scraping, not for browsing
+                    '--disable-web-security', // Only for scraping
                     '--disable-features=IsolateOrigins,site-per-process', // Help with redirects
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
                 ],
             });
             this.pageCount = 0;
@@ -74,17 +72,17 @@ class BrowserPool {
         this.pageCount++;
 
         // Set resource limits and optimizations
-        await page.setRequestInterception(true);
+        // await page.setRequestInterception(true);
 
-        page.on('request', (req) => {
-            // Block unnecessary resources to save bandwidth and memory
-            const resourceType = req.resourceType();
-            if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
-                req.abort();
-            } else {
-                req.continue();
-            }
-        });
+        // page.on('request', (req) => {
+        //     // Block unnecessary resources to save bandwidth and memory
+        //     const resourceType = req.resourceType();
+        //     if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+        //         req.abort();
+        //     } else {
+        //         req.continue();
+        //     }
+        // });
 
         // Set timeouts
         page.setDefaultTimeout(30000);
