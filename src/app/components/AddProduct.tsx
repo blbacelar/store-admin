@@ -6,12 +6,13 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import type { ScrapedProductData } from '@/types';
 
-export default function AddProduct({ onAdd }: { onAdd: (product: any) => Promise<void> }) {
+export default function AddProduct({ onAdd }: { onAdd: (product: ScrapedProductData) => Promise<void> }) {
     const { t } = useTranslation();
     const [url, setUrl] = useState('');
     const [loading, setLoading] = useState(false);
-    const [preview, setPreview] = useState<any>(null);
+    const [preview, setPreview] = useState<ScrapedProductData | null>(null);
     const [error, setError] = useState('');
     const [mounted, setMounted] = useState(false);
 

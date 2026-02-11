@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
 import { requireAuth } from '@/app/lib/apiAuth';
+import { logger } from '@/app/lib/logger';
 
 export async function PATCH(
     request: Request,
@@ -18,7 +19,7 @@ export async function PATCH(
         const body = await request.json();
         const { archived } = body;
 
-        console.log(`Updating archive status for ${idParam} to ${archived}`);
+        logger.debug(`Updating archive status for ${idParam} to ${archived}`);
 
         if (typeof archived !== 'boolean') {
             return NextResponse.json({ error: 'Archived must be a boolean' }, { status: 400 });
@@ -36,7 +37,7 @@ export async function PATCH(
         notifyStoreService();
         return NextResponse.json({ success: true, archived: updatedProduct.archived });
     } catch (error) {
-        console.error('Error archiving product:', error);
+        logger.error('Error archiving product:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

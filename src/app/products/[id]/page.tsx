@@ -444,14 +444,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         </div>
                                     )}
                                     {product.url && product.url !== '#' && (
-                                        <Button
-                                            variant="default"
-                                            className="w-full"
-                                            onClick={() => window.open(product.url, '_blank')}
-                                        >
-                                            <ExternalLink className="mr-2 h-4 w-4" />
-                                            {mounted ? t('product_view') : 'View Product'}
-                                        </Button>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-muted-foreground">
+                                                Product URL
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    value={product.url}
+                                                    disabled
+                                                    className="flex-1 text-sm"
+                                                />
+                                                <Button
+                                                    variant="default"
+                                                    size="sm"
+                                                    onClick={() => window.open(product.url, '_blank')}
+                                                >
+                                                    <ExternalLink className="mr-1 h-3 w-3" />
+                                                    {mounted ? t('product_view') : 'View'}
+                                                </Button>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>

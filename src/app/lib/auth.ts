@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
+import { logger } from "./logger";
 
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(prisma) as any,
@@ -58,11 +59,11 @@ export const authOptions: NextAuthOptions = {
     },
     callbacks: {
         async signIn({ user, account, profile }) {
-            console.log('SignIn callback - User:', user?.email, 'Account:', account?.provider);
+            logger.debug('SignIn callback - User:', user?.email, 'Account:', account?.provider);
             return true;
         },
         async redirect({ url, baseUrl }) {
-            console.log('Redirect callback - URL:', url, 'BaseURL:', baseUrl);
+            logger.debug('Redirect callback - URL:', url, 'BaseURL:', baseUrl);
             // After sign in, always go to dashboard root
             return baseUrl;
         },
@@ -85,7 +86,7 @@ export const authOptions: NextAuthOptions = {
     },
     logger: {
         error(code, metadata) {
-            console.error('NEXTAUTH_ERROR', code, metadata);
+            logger.error('NEXTAUTH_ERROR', code, metadata);
         },
     },
     secret: process.env.NEXTAUTH_SECRET,

@@ -11,14 +11,15 @@ import ProductList from './components/ProductList';
 import { Button } from '@/components/ui/button';
 import { Loader2, Settings } from 'lucide-react';
 import Link from 'next/link';
+import type { Store, Product, ScrapedProductData } from '@/types';
 
 export default function Home() {
   const { t } = useTranslation();
   const router = useRouter();
   const { branches, selectedBranchId, setSelectedBranchId, fetchBranches } = useBranch();
-  const [stores, setStores] = useState<any[]>([]);
-  const [activeStore, setActiveStore] = useState<any>(null);
-  const [products, setProducts] = useState<any[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [activeStore, setActiveStore] = useState<Store | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -109,7 +110,7 @@ export default function Home() {
     }
   }, [selectedBranchId, activeStore]);
 
-  const handleAdd = async (product: any) => {
+  const handleAdd = async (product: ScrapedProductData) => {
     if (!activeStore) return;
     try {
       const res = await fetch('/api/products', {

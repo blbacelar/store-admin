@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
 import { requireAuth } from '@/app/lib/apiAuth';
+import { logger } from '@/app/lib/logger';
 
 export async function PUT(
     request: Request,
@@ -37,13 +38,13 @@ export async function PUT(
         notifyStoreService();
         return NextResponse.json(updatedProduct);
     } catch (error) {
-        console.error('Error updating product:', error);
+        logger.error('Error updating product:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
 export async function GET(
-    request: Request,
+    _request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     // Check authentication
@@ -86,7 +87,7 @@ export async function GET(
 
         return NextResponse.json(formattedProduct);
     } catch (error) {
-        console.error('Error fetching product:', error);
+        logger.error('Error fetching product:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

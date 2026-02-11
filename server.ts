@@ -2,6 +2,10 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
+import { initializeEnv } from './src/app/lib/env';
+
+// Validate environment variables before starting
+initializeEnv();
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';

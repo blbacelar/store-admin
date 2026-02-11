@@ -23,28 +23,17 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Trash2, Edit, EyeOff, Eye, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-
-interface Product {
-    id: string;
-    sheetId: string;
-    title: string;
-    price: string;
-    category: string;
-    image: string;
-    url: string;
-    archived: boolean;
-}
+import type { Product } from '@/types';
 
 interface ProductListProps {
     products: Product[];
-    onDelete: (id: string) => void;
+    onDelete: (id: string) => void; // Keep for interface compatibility
     onRefresh: () => void;
 }
 
-export default function ProductList({ products, onDelete, onRefresh }: ProductListProps) {
+export default function ProductList({ products, onDelete: _onDelete, onRefresh }: ProductListProps) {
     const { t } = useTranslation();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');

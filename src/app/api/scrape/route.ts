@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { scrapeProduct } from '@/app/lib/productScraper';
 import { requireAuth } from '@/app/lib/apiAuth';
+import { rateLimit } from '@/app/lib/rateLimit';
+import { logger } from '@/app/lib/logger';
 
 // Whitelist allowed domains to prevent SSRF attacks
 const ALLOWED_DOMAINS = [
@@ -65,6 +67,15 @@ export async function POST(request: Request) {
         return auth.response;
     }
 
+    // Apply rate limiting - 5 requests per minute per user
+    const userId = (auth.session.user as { id: string }).id;
+    const rateLimitResult = rateLimit(`scrape:${userId}`, 5, 60000);
+
+    if (rateLimitResult.limited) {
+        logger.warn(`Rate limit exceeded for user ${userId}`);
+        return rateLimitResult.response!;
+    }
+
     try {
         const { url } = await request.json();
 
@@ -80,11 +91,11 @@ export async function POST(request: Request) {
         }
 
         const start = Date.now();
-        console.log(`Scraping URL: ${url}`);
+        logger.debug(`Scraping URL: ${url}`);
 
         const productData = await scrapeProduct(url);
 
-        console.log(`Scraping took ${Date.now() - start}ms`);
+        logger.debug(`Scraping took ${Date.now() - start}ms`);
 
         if (!productData) {
             return NextResponse.json({ error: 'Failed to scrape product' }, { status: 500 });
@@ -92,7 +103,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json(productData);
     } catch (error) {
-        console.error('API Error:', error);
+        logger.error('API Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

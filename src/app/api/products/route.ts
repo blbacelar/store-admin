@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
 import { requireAuth } from '@/app/lib/apiAuth';
+import { logger } from '@/app/lib/logger';
 
 export async function GET(request: Request) {
     // Check authentication
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
         }
 
-        const whereClause: any = {
+        const whereClause: { storeId: string; branchId?: string } = {
             storeId: storeId
         };
 
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json(formattedProducts);
     } catch (error) {
-        console.error('Error fetching products:', error);
+        logger.error('Error fetching products:', error);
         return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }
 }
@@ -103,7 +104,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
         }
 
-        const productData: any = {
+        const productData: {
+            name: string;
+            price: number;
+            imageUrl: string;
+            affiliateUrl: string;
+            storeId: string;
+            archived: boolean;
+            branchId?: string;
+        } = {
             name: sanitizedTitle,
             price: parsedPrice,
             imageUrl: image || '',
@@ -124,7 +133,7 @@ export async function POST(request: Request) {
         notifyStoreService();
         return NextResponse.json(newProduct);
     } catch (error) {
-        console.error('Error creating product:', error);
+        logger.error('Error creating product:', error);
         return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
     }
 }
@@ -153,7 +162,7 @@ export async function DELETE(request: Request) {
         notifyStoreService();
         return NextResponse.json({ message: 'Deleted' });
     } catch (error) {
-        console.error('Error deleting product:', error);
+        logger.error('Error deleting product:', error);
         return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
     }
 }
