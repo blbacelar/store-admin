@@ -47,6 +47,7 @@ export interface ScrapedProductData {
     price: string;
     image: string;
     url: string;
+    debug?: any;
 }
 
 export interface CreateProductInput {

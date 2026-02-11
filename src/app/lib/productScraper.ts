@@ -89,8 +89,18 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                 }
             }
 
+            if (!title || title === 'No Title Found' || !price || price === 'No Price Found') {
+                const bodyText = document.body.innerText.substring(0, 500);
+                const pageTitle = document.title;
+                return { title, price, image, debug: { bodyText, pageTitle, url: window.location.href } };
+            }
+
             return { title, price, image };
         });
+
+        if (data.debug) {
+            logger.warn(`[SCRAPER DEBUG] Missing data for ${url}:`, data.debug);
+        }
 
         return { ...data, url };
     } catch (error) {

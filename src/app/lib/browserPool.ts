@@ -44,10 +44,14 @@ class BrowserPool {
                 const puppeteerCore = require('puppeteer-core');
 
                 // Optimized args for serverless environment
+                const executablePath = await chromium.executablePath();
+                logger.debug(`[BROWSER LAUNCH] Executable Path: ${executablePath}`);
+                logger.debug(`[BROWSER LAUNCH] Args: ${JSON.stringify(chromium.args)}`);
+
                 this.browser = await puppeteerCore.launch({
                     args: chromium.args,
                     defaultViewport: chromium.defaultViewport,
-                    executablePath: await chromium.executablePath(),
+                    executablePath: executablePath,
                     headless: chromium.headless,
                 }) as unknown as Browser;
             } else {
