@@ -22,10 +22,18 @@ export default function LoginPage() {
 
     useEffect(() => {
         setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        console.log('Session status:', session?.status);
+        console.log('Session data:', session?.data);
+
         if (session?.status === "authenticated") {
+            console.log('User authenticated, redirecting to dashboard...');
             router.push("/");
+            router.refresh();
         }
-    }, [session?.status, router]);
+    }, [session?.status, session?.data, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,9 +60,17 @@ export default function LoginPage() {
         }
     };
 
-    const handleGoogleSignIn = () => {
+    const handleGoogleSignIn = async () => {
         setIsLoading(true);
-        signIn("google");
+        try {
+            await signIn("google", {
+                callbackUrl: "/",
+                redirect: true
+            });
+        } catch (error) {
+            console.error('Google sign-in error:', error);
+            setIsLoading(false);
+        }
     };
 
     return (
