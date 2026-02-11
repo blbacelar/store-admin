@@ -2,7 +2,7 @@
 
 import { signIn, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +20,15 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [mounted, setMounted] = useState(false);
 
+    const searchParams = useSearchParams();
+
     useEffect(() => {
         setMounted(true);
-    }, []);
+        const errorParam = searchParams.get("error");
+        if (errorParam === "AccessDenied") {
+            setError("Access Denied: You do not have permission to sign in.");
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         console.log('Session status:', session?.status);

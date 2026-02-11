@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import prisma from "@/app/lib/prisma";
 import { NextResponse } from "next/server";
+import { isEmailAllowed } from "@/app/lib/security";
 
 function isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,6 +25,11 @@ export async function POST(request: Request) {
         // Validate password strength
         if (password.length < 8) {
             return new NextResponse("Password must be at least 8 characters", { status: 400 });
+        }
+
+        // Check if email is allowed
+        if (!isEmailAllowed(email)) {
+            return new NextResponse("Access denied. Please contact support to request access.", { status: 403 });
         }
 
         // Check if user already exists

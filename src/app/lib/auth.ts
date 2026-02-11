@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 import { logger } from "./logger";
+import { isEmailAllowed } from "./security";
 
 export const authOptions: NextAuthOptions = {
     adapter: PrismaAdapter(prisma) as any,
@@ -56,10 +57,17 @@ export const authOptions: NextAuthOptions = {
     ],
     pages: {
         signIn: "/login",
+        error: "/login", // Redirect to login page on error
     },
     callbacks: {
         async signIn({ user, account, profile }) {
             logger.debug('SignIn callback - User:', user?.email, 'Account:', account?.provider);
+
+            if (!isEmailAllowed(user.email)) {
+                logger.warn(`Login attempt denied for email: ${user.email}`);
+                return false; // Or return a URL to a custom error page
+            }
+
             return true;
         },
         async redirect({ url, baseUrl }) {
