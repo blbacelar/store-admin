@@ -2,14 +2,44 @@ import { browserPool } from './browserPool';
 import { logger } from './logger';
 import type { ScrapedProductData } from '@/types';
 
+import * as https from 'https';
+
+function resolveRedirect(url: string): Promise<string> {
+    return new Promise((resolve) => {
+        if (!url.includes('amzn.to')) {
+            resolve(url);
+            return;
+        }
+
+        const req = https.get(url, (res) => {
+            if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                logger.debug(`Resolved ${url} to ${res.headers.location}`);
+                resolve(res.headers.location);
+            } else {
+                resolve(url);
+            }
+        });
+
+        req.on('error', (e) => {
+            logger.error('Error resolving redirect:', e);
+            resolve(url);
+        });
+
+        req.end();
+    });
+}
+
 export async function scrapeProduct(url: string): Promise<ScrapedProductData | null> {
     let page = null;
 
     try {
+        // Resolve short URLs first to avoid Puppeteer redirect issues
+        const targetUrl = await resolveRedirect(url);
+
         // Get page from browser pool
         page = await browserPool.getPage();
 
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
         // Extract Data
         const data = await page.evaluate(() => {
