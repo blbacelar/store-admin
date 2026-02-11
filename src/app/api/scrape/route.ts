@@ -14,7 +14,8 @@ const ALLOWED_DOMAINS = [
     'amazon.it',
     'amazon.es',
     'amazon.ca',
-    'amazon.co.jp'
+    'amazon.co.jp',
+    'amzn.to'
 ];
 
 function isValidAmazonUrl(url: string): boolean {
