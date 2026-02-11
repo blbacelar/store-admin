@@ -9,7 +9,7 @@ export async function PUT(
 ) {
     // Check authentication
     const auth = await requireAuth();
-    if (!auth.authorized) {
+    if (auth.authorized === false) {
         return auth.response;
     }
 
@@ -48,7 +48,7 @@ export async function GET(
 ) {
     // Check authentication
     const auth = await requireAuth();
-    if (!auth.authorized) {
+    if (auth.authorized === false) {
         return auth.response;
     }
 

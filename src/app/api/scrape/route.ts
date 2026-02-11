@@ -61,7 +61,7 @@ function isValidAmazonUrl(url: string): boolean {
 export async function POST(request: Request) {
     // Check authentication
     const auth = await requireAuth();
-    if (!auth.authorized) {
+    if (auth.authorized === false) {
         return auth.response;
     }
 

@@ -9,7 +9,7 @@ export async function PATCH(
 ) {
     // Check authentication
     const auth = await requireAuth();
-    if (!auth.authorized) {
+    if (auth.authorized === false) {
         return auth.response;
     }
 

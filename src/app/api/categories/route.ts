@@ -5,7 +5,7 @@ import { requireAuth } from '@/app/lib/apiAuth';
 export async function GET(request: Request) {
     // Check authentication
     const auth = await requireAuth();
-    if (!auth.authorized) {
+    if (auth.authorized === false) {
         return auth.response;
     }
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     // Check authentication
     const auth = await requireAuth();
-    if (!auth.authorized) {
+    if (auth.authorized === false) {
         return auth.response;
     }
 
