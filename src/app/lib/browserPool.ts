@@ -6,11 +6,6 @@
 import { Browser, Page } from 'puppeteer';
 import { logger } from './logger';
 
-// Use puppeteer-extra with stealth plugin to bypass bot detection
-const puppeteerExtra = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteerExtra.use(StealthPlugin());
-
 class BrowserPool {
     private browser: Browser | null = null;
     private pageCount = 0;
@@ -41,25 +36,31 @@ class BrowserPool {
         // Initialize new browser
         this.isInitializing = true;
         try {
-            logger.debug('Launching new browser instance with stealth plugin');
+            logger.debug('Launching new browser instance');
 
             if (process.env.NODE_ENV === 'production') {
                 logger.debug('Using production configuration with @sparticuz/chromium');
                 const chromium = require('@sparticuz/chromium');
+                const puppeteerCore = require('puppeteer-core');
 
                 // Optimized args for serverless environment
                 const executablePath = await chromium.executablePath();
                 logger.debug(`[BROWSER LAUNCH] Executable Path: ${executablePath}`);
                 logger.debug(`[BROWSER LAUNCH] Args: ${JSON.stringify(chromium.args)}`);
 
-                this.browser = await puppeteerExtra.launch({
+                this.browser = await puppeteerCore.launch({
                     args: chromium.args,
                     defaultViewport: chromium.defaultViewport,
                     executablePath: executablePath,
                     headless: chromium.headless,
                 }) as unknown as Browser;
             } else {
-                logger.debug('Using local configuration with puppeteer-extra');
+                // Use stealth plugin in development only
+                logger.debug('Using local configuration with puppeteer-extra and stealth plugin');
+                const puppeteerExtra = require('puppeteer-extra');
+                const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+                puppeteerExtra.use(StealthPlugin());
+
                 this.browser = await puppeteerExtra.launch({
                     headless: true,
                     args: [
