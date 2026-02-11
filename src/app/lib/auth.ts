@@ -63,10 +63,8 @@ export const authOptions: NextAuthOptions = {
         },
         async redirect({ url, baseUrl }) {
             console.log('Redirect callback - URL:', url, 'BaseURL:', baseUrl);
-            // Always redirect to dashboard after successful sign in
-            if (url.startsWith(baseUrl)) return url;
-            if (url.startsWith("/")) return `${baseUrl}${url}`;
-            return baseUrl + "/";
+            // After sign in, always go to dashboard root
+            return baseUrl;
         },
         async jwt({ token, user, account }) {
             if (user) {
