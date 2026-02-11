@@ -38,7 +38,7 @@ class BrowserPool {
         try {
             logger.debug('Launching new browser instance');
             this.browser = await puppeteer.launch({
-                headless: false, // Enable for debugging as requested
+                headless: true, // Revert to headless for production compatibility
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
