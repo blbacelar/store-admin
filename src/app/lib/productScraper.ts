@@ -48,7 +48,7 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
 
             // Try clicking the continue button if it exists
             try {
-                await page.click('a[href*="continue"]', { timeout: 5000 });
+                await page.click('a[href*="continue"]');
                 await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 });
             } catch (e) {
                 // Button might not exist or already navigated, continue
