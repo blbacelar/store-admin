@@ -40,8 +40,9 @@ class BrowserPool {
 
             if (process.env.NODE_ENV === 'production' && process.env.DEPLOYMENT_TYPE !== 'vps') {
                 logger.debug('Using production configuration with @sparticuz/chromium');
-                const chromium = require('@sparticuz/chromium');
-                const puppeteerCore = require('puppeteer-core');
+                // Use dynamic imports to avoid bundling issues
+                const chromium = await import('@sparticuz/chromium').then(m => m.default);
+                const puppeteerCore = await import('puppeteer-core').then(m => m.default);
 
                 // Optimized args for serverless environment
                 const executablePath = await chromium.executablePath();
@@ -57,8 +58,9 @@ class BrowserPool {
             } else {
                 // Use stealth plugin in development OR VPS production
                 logger.debug('Using standard configuration with puppeteer-extra and stealth plugin');
-                const puppeteerExtra = require('puppeteer-extra');
-                const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+                // Use dynamic imports to completely bypass Next.js bundling
+                const puppeteerExtra = await import('puppeteer-extra').then(m => m.default);
+                const StealthPlugin = await import('puppeteer-extra-plugin-stealth').then(m => m.default);
                 puppeteerExtra.use(StealthPlugin());
 
                 // For VPS/Docker, we might need to specify executable path if not found automatically
