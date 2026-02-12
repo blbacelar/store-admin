@@ -52,7 +52,7 @@ class BrowserPool {
                 this.browser = await puppeteerCore.launch({
                     args: chromium.args,
                     executablePath: executablePath,
-                    headless: chromium.headless,
+                    headless: true,
                 }) as unknown as Browser;
             } else {
                 // Use stealth plugin in development OR VPS production
