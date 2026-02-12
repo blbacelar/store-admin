@@ -51,7 +51,6 @@ class BrowserPool {
 
                 this.browser = await puppeteerCore.launch({
                     args: chromium.args,
-                    defaultViewport: chromium.defaultViewport,
                     executablePath: executablePath,
                     headless: chromium.headless,
                 }) as unknown as Browser;
