@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
         ]
       }
     ];
-  }
+  },
   serverExternalPackages: [
     'puppeteer-core',
     'puppeteer-extra',
@@ -48,4 +48,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
