@@ -50,14 +50,7 @@ const nextConfig: NextConfig = {
     config.externals = [...(config.externals || []), 'puppeteer', 'puppeteer-core', 'puppeteer-extra', 'puppeteer-extra-plugin-stealth', '@sparticuz/chromium'];
     return config;
   },
-  experimental: {
-    turbo: {
-      resolveAlias: {
-        // Puppeteer needs to be external in Turbo too
-        puppeteer: 'puppeteer-core',
-      }
-    }
-  }
+
 };
 
 export default nextConfig;
