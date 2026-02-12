@@ -61,6 +61,8 @@ function isValidAmazonUrl(url: string): boolean {
     }
 }
 
+// Scraper Route
+// Last updated: Force deployment rebuild
 export async function POST(request: Request) {
     // Check authentication
     const auth = await requireAuth();
