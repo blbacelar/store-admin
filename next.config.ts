@@ -40,11 +40,16 @@ const nextConfig: NextConfig = {
     ];
   },
   serverExternalPackages: [
+    'puppeteer',
     'puppeteer-core',
     'puppeteer-extra',
     'puppeteer-extra-plugin-stealth',
     '@sparticuz/chromium'
   ],
+  webpack: (config) => {
+    config.externals = [...(config.externals || []), 'puppeteer', 'puppeteer-core', 'puppeteer-extra', 'puppeteer-extra-plugin-stealth', '@sparticuz/chromium'];
+    return config;
+  },
 };
 
 export default nextConfig;
