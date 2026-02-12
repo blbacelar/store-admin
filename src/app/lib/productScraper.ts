@@ -1,8 +1,14 @@
-import { browserPool } from './browserPool';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { logger } from './logger';
 import type { ScrapedProductData } from '@/types';
-
 import * as https from 'https';
+import * as cheerio from 'cheerio';
+
+// Declare process type to avoid "process" not found errors if types are missing
+declare const process: {
+    cwd: () => string;
+    env: Record<string, string | undefined>;
+};
 
 function resolveRedirect(url: string): Promise<string> {
     return new Promise((resolve) => {
@@ -11,7 +17,7 @@ function resolveRedirect(url: string): Promise<string> {
             return;
         }
 
-        const req = https.get(url, (res) => {
+        const req = https.get(url, (res: any) => {
             if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
                 logger.debug(`Resolved ${url} to ${res.headers.location}`);
                 resolve(res.headers.location);
@@ -20,7 +26,7 @@ function resolveRedirect(url: string): Promise<string> {
             }
         });
 
-        req.on('error', (e) => {
+        req.on('error', (e: any) => {
             logger.error('Error resolving redirect:', e);
             resolve(url);
         });
@@ -30,113 +36,111 @@ function resolveRedirect(url: string): Promise<string> {
 }
 
 export async function scrapeProduct(url: string): Promise<ScrapedProductData | null> {
-    let page = null;
-
     try {
         // Resolve short URLs first to avoid Puppeteer redirect issues
         const targetUrl = await resolveRedirect(url);
 
-        // Get page from browser pool
-        page = await browserPool.getPage();
+        logger.info(`Starting scrape for URL: ${targetUrl}`);
 
-        await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-
-        // Check if we hit Amazon's bot detection page
-        const pageText = await page.evaluate(() => document.body.innerText);
-        if (pageText.includes('Continuar comprando') || pageText.includes('Continue shopping')) {
-            logger.warn('Bot detection page detected, waiting for product page...');
-
-            // Try clicking the continue button if it exists
+        return new Promise(async (resolve, reject) => {
             try {
-                await page.click('a[href*="continue"]');
-                await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 });
-            } catch (e) {
-                // Button might not exist or already navigated, continue
-                logger.debug('Continue button not found or already navigated');
-            }
+                // Run standalone scraper script
+                const { spawn } = await import('child_process');
+                const path = await import('path');
 
-            // Wait for product title to appear
-            try {
-                await page.waitForSelector('#productTitle', { timeout: 15000 });
-            } catch (e) {
-                logger.error('Product title never appeared after bot detection');
-                throw new Error('Amazon bot detection: product page did not load');
-            }
-        }
+                // Path to script inside the Docker container or local environment
+                const scriptPath = path.join(process.cwd(), 'public', 'scripts', 'scraper.js');
 
-        // Extract Data
-        const data = await page.evaluate(() => {
-            const title = document.querySelector('#productTitle')?.textContent?.trim() ||
-                document.querySelector('meta[name="title"]')?.getAttribute('content') ||
-                'No Title Found';
+                logger.debug(`Spawning scraper script at: ${scriptPath}`);
 
-            // ... selectors ...
-            const priceSelectors = [
-                '.a-price .a-offscreen',
-                '.priceToPay .a-offscreen',
-                '#priceblock_ourprice',
-                '#priceblock_dealprice',
-                '.apexPriceToPay .a-offscreen'
-            ];
+                const child = spawn('node', [scriptPath, targetUrl], {
+                    env: process.env
+                });
 
-            let price = 'No Price Found';
-            for (const sel of priceSelectors) {
-                const el = document.querySelector(sel);
-                if (el && el.textContent) {
-                    price = el.textContent.trim();
-                    break;
-                }
-            }
+                let stdoutData = '';
+                let stderrData = '';
 
-            let image = '';
-            const imgEl = document.querySelector('#landingImage') ||
-                document.querySelector('#imgTagWrapperId img') ||
-                document.querySelector('#imgBlkFront') ||
-                document.querySelector('#ebooksImgBlkFront') ||
-                document.querySelector('.a-dynamic-image');
+                child.stdout.on('data', (data: any) => {
+                    stdoutData += data.toString();
+                });
 
-            if (imgEl) {
-                image = imgEl.getAttribute('data-old-hires') ||
-                    imgEl.getAttribute('src') || '';
+                child.stderr.on('data', (data: any) => {
+                    stderrData += data.toString();
+                    logger.debug(`[Scraper Script]: ${data.toString().trim()}`);
+                });
 
-                // Dynamic check
-                if (!image) {
-                    const dynamicData = imgEl.getAttribute('data-a-dynamic-image');
-                    if (dynamicData) {
-                        try {
-                            const parsed = JSON.parse(dynamicData);
-                            const keys = Object.keys(parsed);
-                            if (keys.length > 0) image = keys[0];
-                        } catch (e) { }
+                child.on('close', (code: any) => {
+                    if (code !== 0) {
+                        logger.error(`Scraper script exited with code ${code}`);
+                        reject(new Error(`Scraper failed: ${stderrData || 'Unknown error'}`));
+                        return;
                     }
-                }
-            }
 
-            if (!title || title === 'No Title Found' || !price || price === 'No Price Found') {
-                const bodyText = document.body.innerText.substring(0, 500);
-                const pageTitle = document.title;
-                return { title, price, image, debug: { bodyText, pageTitle, url: window.location.href } };
-            }
+                    try {
+                        const result = JSON.parse(stdoutData.trim());
+                        if (!result.success || !result.content) {
+                            reject(new Error('Invalid scraper output'));
+                            return;
+                        }
 
-            return { title, price, image };
+                        const $ = cheerio.load(result.content);
+
+                        const title = $('h1').first().text().trim() ||
+                            $('meta[property="og:title"]').attr('content') ||
+                            $('title').text().trim();
+
+                        const description = $('meta[name="description"]').attr('content') ||
+                            $('meta[property="og:description"]').attr('content') ||
+                            '';
+
+                        const image = $('meta[property="og:image"]').attr('content') ||
+                            $('img').first().attr('src') ||
+                            '';
+
+                        let price = 0;
+                        const priceText = $('[class*="price"], [id*="price"]').first().text().trim();
+                        if (priceText) {
+                            const match = priceText.match(/[\d,.]+/);
+                            if (match) {
+                                price = parseFloat(match[0].replace(/,/g, ''));
+                            }
+                        }
+
+                        const product: ScrapedProductData = {
+                            url: targetUrl,
+                            title: title || 'Unknown Product',
+                            description: description,
+                            images: image ? [image] : [],
+                            price: price,
+                            currency: 'USD',
+                            originalPrice: price,
+                            available: true,
+                            specifications: {},
+                            rating: 0,
+                            reviewsCount: 0
+                        };
+
+                        logger.info(`Successfully scraped product: ${product.title}`);
+                        resolve(product);
+
+                    } catch (error) {
+                        logger.error('Failed to parse scraper output:', error);
+                        reject(error);
+                    }
+                });
+
+                child.on('error', (err: any) => {
+                    logger.error('Failed to start scraper process:', err);
+                    reject(err);
+                });
+
+            } catch (innerError) {
+                reject(innerError);
+            }
         });
 
-        if (data.debug) {
-            logger.warn(`[SCRAPER DEBUG] Missing data for ${url}:`, data.debug);
-        }
-
-        return { ...data, url };
-    } catch (error) {
-        logger.error('Scraper Error:', error);
+    } catch (error: any) {
+        logger.error(`Error in scrapeProduct: ${error.message}`);
         return null;
-    } finally {
-        // Always close the page to free resources
-        if (page) {
-            try {
-                await page.close();
-            } catch (e) {
-                logger.error('Error closing page:', e);
-            }
-        }
     }
 }

@@ -17,6 +17,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@sparticuz/chromium": "^143.0.4",
     "bcryptjs": "^3.0.3",
+    "cheerio": "^1.2.0",
     "google-auth-library": "^10.5.0",
     "googleapis": "^171.2.0",
     "i18next": "^25.8.4",

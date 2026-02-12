@@ -88,11 +88,13 @@ RUN apt-get update && apt-get install -y \
     libappindicator3-1 \
     lsb-release \
     xdg-utils \
+    chromium \
     && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV DEPLOYMENT_TYPE=vps
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 COPY --from=base /app/public ./public
 COPY --from=base /app/.next ./.next
