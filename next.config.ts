@@ -57,6 +57,11 @@ const nextConfig: NextConfig = {
     return config;
   },
 
+  env: {
+    // Add build verification info
+    BUILD_TIMESTAMP: new Date().toISOString(),
+    GIT_SHA: process.env.GIT_SHA || 'unknown',
+  },
 };
 
 export default nextConfig;
