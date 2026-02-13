@@ -49,7 +49,7 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                 const path = await import('path');
 
                 // Path to script inside the Docker container or local environment
-                const scriptPath = path.join(process.cwd(), 'public', 'scripts', 'scraper.js');
+                const scriptPath = path.join(process.cwd(), 'public', 'scripts', 'scraper-crawlee.mjs');
 
                 logger.debug(`Spawning scraper script at: ${scriptPath}`);
 
