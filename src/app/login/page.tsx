@@ -116,6 +116,7 @@ function LoginForm() {
                             disabled={isLoading}
                             className="h-11 bg-background/50"
                             required
+                            autoComplete="email"
                         />
                     </div>
                     <div className="space-y-2">
@@ -127,6 +128,7 @@ function LoginForm() {
                             disabled={isLoading}
                             className="h-11 bg-background/50"
                             required
+                            autoComplete="current-password"
                         />
                     </div>
                     {error && <p className="text-sm text-destructive font-medium">{error}</p>}

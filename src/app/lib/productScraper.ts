@@ -54,8 +54,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                 logger.debug(`Spawning scraper script at: ${scriptPath}`);
 
                 const child = spawn('node', [scriptPath, targetUrl], {
-                    env: process.env
-                });
+                    env: process.env as any
+                }) as any;
 
                 let stdoutData = '';
                 let stderrData = '';
@@ -85,9 +85,17 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
 
                         const $ = cheerio.load(result.content);
 
-                        const title = $('h1').first().text().trim() ||
-                            $('meta[property="og:title"]').attr('content') ||
-                            $('title').text().trim();
+                        const h1 = $('h1').first().text().trim();
+                        const ogTitle = $('meta[property="og:title"]').attr('content');
+                        const docTitle = $('title').text().trim();
+                        logger.info(`[SCRAPER DEBUG] H1: "${h1}", OG:Title: "${ogTitle}", DocTitle: "${docTitle}"`);
+
+                        // Check if we hit a captcha or block page
+                        if (docTitle.includes('Robot Check') || docTitle.includes('Captcha')) {
+                            logger.warn('[SCRAPER WARNING] Hit Amazon Robot Check/Captcha page.');
+                        }
+
+                        const title = h1 || ogTitle || docTitle;
 
                         const description = $('meta[name="description"]').attr('content') ||
                             $('meta[property="og:description"]').attr('content') ||

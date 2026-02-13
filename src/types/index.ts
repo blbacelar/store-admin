@@ -43,10 +43,17 @@ export interface Category {
 }
 
 export interface ScrapedProductData {
-    title: string;
-    price: string;
-    image: string;
     url: string;
+    title: string;
+    description?: string;
+    images: string[];
+    price: number;
+    currency: string;
+    originalPrice?: number;
+    available?: boolean;
+    specifications?: Record<string, string>;
+    rating?: number;
+    reviewsCount?: number;
     debug?: any;
 }
 

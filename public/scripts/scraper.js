@@ -17,17 +17,18 @@ async function runScraper() {
         console.error('Launching standalone scraper for:', url);
 
         // Launch options for VPS/Docker environment
+        // Defaults to headless unless HEADLESS=false is set
+        const headless = process.env.HEADLESS === 'false' ? false : true;
+
         const launchOptions = {
-            headless: true,
+            headless: headless,
+            defaultViewport: null,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--no-zygote',
-                '--disable-accelerated-2d-canvas',
-                '--disable-web-security',
-                '--disable-features=IsolateOrigins,site-per-process',
+                '--start-maximized',
+                '--window-size=1920,1080'
             ],
             ignoreHTTPSErrors: true
         };
@@ -67,7 +68,18 @@ async function runScraper() {
         process.exit(1);
     } finally {
         if (browser) {
-            await browser.close();
+            // Keep browser open if requested (Environment Variable)
+            if (process.env.KEEP_BROWSER_OPEN === 'true') {
+                console.error('Keeping browser open for debugging...');
+                // Wait for a long time (e.g. 5 minutes) before closing to allow inspection
+                // But since node script exits, we need to keep event loop alive?
+                // Actually if successful, script exits immediately after print log?
+                // runScraper calls this async. Wait inside async?
+                await new Promise(resolve => setTimeout(resolve, 300000)); // 5 minutes
+                await browser.close();
+            } else {
+                await browser.close();
+            }
         }
     }
 }
