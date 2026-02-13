@@ -9,7 +9,7 @@ const resources = {
         translation: {
             "all": "All",
             "dashboard_title": "Dashboard",
-            "dashboard_subtitle": "Manage your products",
+            "dashboard_subtitle": "Manage your products - TESTE",
             "dashboard_sub": "Automate your product tracking workflow",
             "manage_categories": "Manage Categories",
             "manage_branches": "Manage Branches",
@@ -97,7 +97,7 @@ const resources = {
         translation: {
             "all": "Todos",
             "dashboard_title": "Painel",
-            "dashboard_subtitle": "Gerencie seus produtos",
+            "dashboard_subtitle": "Gerencie seus produtos - TESTE",
             "dashboard_sub": "Automatize seu fluxo de rastreamento de produtos",
             "manage_categories": "Gerenciar Categorias",
             "manage_branches": "Gerenciar Locais",
