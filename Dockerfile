@@ -60,7 +60,8 @@ WORKDIR /app
 # Install runtime dependencies for Chrome (required again in runner stage if multi-stage)
 # (Playwright handles this via install-deps)
 
-# Install Playwright dependencies
+# Install Playwright dependencies and procps (required for Crawlee monitoring)
+RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
 RUN npx playwright install --with-deps chromium
 
 ENV NODE_ENV=production
