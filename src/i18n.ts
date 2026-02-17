@@ -90,7 +90,9 @@ const resources = {
             "product_saved": "Product saved successfully",
             "save_error": "Failed to save product",
             "categories": "Categories",
-            "branches": "Branches"
+            "branches": "Branches",
+            "archive": "Archive",
+            "unarchive": "Unarchive"
         }
     },
     pt: {
@@ -178,7 +180,9 @@ const resources = {
             "product_saved": "Produto salvo com sucesso",
             "save_error": "Falha ao salvar produto",
             "categories": "Categorias",
-            "branches": "Locais"
+            "branches": "Locais",
+            "archive": "Arquivar",
+            "unarchive": "Desarquivar"
         }
     }
 };

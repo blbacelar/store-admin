@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ExternalLink, Loader2, Tag, Package, Edit, Save, X, MapPin } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Loader2, Tag, Package, Edit, Save, X, MapPin, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Category {
@@ -29,6 +29,7 @@ interface Product {
     image: string;
     url: string;
     description?: string;
+    archived: boolean;
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -149,6 +150,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         }
     };
 
+    const handleArchive = async () => {
+        if (!product) return;
+        const newArchivedState = !product.archived;
+
+        // Optimistic update
+        setProduct({ ...product, archived: newArchivedState });
+
+        try {
+            const res = await fetch(`/api/products/${product.id}/archive`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ archived: newArchivedState })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || `Failed to update archive status: ${res.status}`);
+            }
+        } catch (err: any) {
+            console.error('Archive error:', err);
+            // Revert on error
+            setProduct({ ...product, archived: !newArchivedState });
+            alert(`Error: ${err.message || 'Failed to update archive status'}`);
+        }
+    };
+
     const handleEdit = () => {
         setIsEditing(true);
     };
@@ -255,10 +282,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     </Button>
 
                     {!isEditing && (
-                        <Button onClick={handleEdit} variant="outline">
-                            <Edit className="mr-2 h-4 w-4" />
-                            {mounted ? t('edit') : 'Edit'}
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={handleArchive}
+                                variant={product.archived ? "default" : "outline"}
+                                title={product.archived ? "Unarchive Product" : "Archive Product"}
+                            >
+                                {product.archived ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                                {product.archived ? (mounted ? t('unarchive') : 'Unarchive') : (mounted ? t('archive') : 'Archive')}
+                            </Button>
+                            <Button onClick={handleEdit} variant="outline">
+                                <Edit className="mr-2 h-4 w-4" />
+                                {mounted ? t('edit') : 'Edit'}
+                            </Button>
+                        </div>
                     )}
                 </div>
 

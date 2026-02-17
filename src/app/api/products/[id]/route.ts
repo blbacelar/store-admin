@@ -35,6 +35,11 @@ export async function PUT(
             }
         });
 
+        // Invalidate cache for products
+        const { productCache } = await import('@/app/lib/cache');
+        productCache.deletePattern('products:');
+        logger.info(`[CACHE INVALIDATE] PUT products:`);
+
         notifyStoreService();
         return NextResponse.json(updatedProduct);
     } catch (error) {

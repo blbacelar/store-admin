@@ -24,7 +24,10 @@ export async function GET(request: Request) {
 
         // Filter by branchId if provided
         if (branchId) {
-            whereClause.branchId = branchId;
+            whereClause.OR = [
+                { branchId: branchId },
+                { branchId: null }
+            ];
         }
 
         const categories = await prisma.category.findMany({

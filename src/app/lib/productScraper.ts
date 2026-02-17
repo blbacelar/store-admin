@@ -70,6 +70,7 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                 });
 
                 child.on('close', (code: any) => {
+                    logger.info(`Scraper process closed with code ${code}`);
                     if (code !== 0) {
                         logger.error(`Scraper script exited with code ${code}`);
                         reject(new Error(`Scraper failed: ${stderrData || 'Unknown error'}`));
@@ -77,13 +78,30 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                     }
 
                     try {
-                        const result = JSON.parse(stdoutData.trim());
+                        logger.debug(`Parsing scraper output (size: ${stdoutData.length})`);
+                        // Try to parse the whole output first
+                        let result;
+                        try {
+                            result = JSON.parse(stdoutData.trim());
+                        } catch (e) {
+                            // If that fails, try to find the JSON line (usually the last one)
+                            const lines = stdoutData.trim().split('\n');
+                            const lastLine = lines[lines.length - 1];
+                            try {
+                                result = JSON.parse(lastLine);
+                            } catch (e2) {
+                                throw new Error(`Failed to parse scraper output. Raw output: ${stdoutData.substring(0, 200)}...`);
+                            }
+                        }
+
                         if (!result.success || !result.content) {
-                            reject(new Error('Invalid scraper output'));
+                            reject(new Error('Invalid scraper output structure'));
                             return;
                         }
 
+                        logger.debug('Loading content into Cheerio');
                         const $ = cheerio.load(result.content);
+                        // ...
 
                         const h1 = $('h1').first().text().trim();
                         const ogTitle = $('meta[property="og:title"]').attr('content');
@@ -101,9 +119,83 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                             $('meta[property="og:description"]').attr('content') ||
                             '';
 
-                        const image = $('meta[property="og:image"]').attr('content') ||
-                            $('img').first().attr('src') ||
-                            '';
+                        // Improved image extraction for Amazon
+                        let image = '';
+
+                        // 1. Try PRIME Amazon selectors first (Main Product Image area)
+                        const primeSelectors = [
+                            '#main-image-container img',
+                            '#imgTagWrapperId img',
+                            '#landingImage',
+                            '#main-image',
+                            '#imgBlkFront'
+                        ];
+
+                        let amazonImg = null;
+                        for (const selector of primeSelectors) {
+                            const elements = $(selector);
+                            for (let i = 0; i < elements.length; i++) {
+                                const img = $(elements[i]);
+                                const src = img.attr('src') || '';
+                                const isPlaceholder = src.includes('pixel.gif') || src.includes('transparent-pixel') || src.includes('1x1');
+
+                                if (!isPlaceholder) {
+                                    amazonImg = img;
+                                    break;
+                                }
+                            }
+                            if (amazonImg) break; // Found something in prime area, stop searching broader
+                        }
+
+                        // 2. If nothing in prime area, try secondary selectors
+                        if (!amazonImg) {
+                            const secondaryImages = $('img.a-dynamic-image');
+                            for (let i = 0; i < secondaryImages.length; i++) {
+                                const img = $(secondaryImages[i]);
+                                const src = img.attr('src') || '';
+                                if (!src.includes('pixel.gif')) {
+                                    amazonImg = img;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (amazonImg) {
+                            // Try dynamic image JSON (best for various resolutions)
+                            const dynamic = amazonImg.attr('data-a-dynamic-image');
+                            if (dynamic) {
+                                try {
+                                    const urls = JSON.parse(dynamic);
+                                    const allUrls = Object.keys(urls);
+                                    if (allUrls.length > 0) {
+                                        // Take the last one (usually highest res)
+                                        image = allUrls[allUrls.length - 1];
+                                    }
+                                } catch (e) { }
+                            }
+
+                            // Fallback to old-hires or src
+                            if (!image) {
+                                image = amazonImg.attr('data-old-hires') || amazonImg.attr('src') || '';
+                            }
+                        }
+
+                        // 2. Metadata fallbacks
+                        if (!image) {
+                            image = $('meta[property="og:image"]').attr('content') ||
+                                $('meta[name="twitter:image"]').attr('content') ||
+                                $('link[rel="image_src"]').attr('href') ||
+                                '';
+                        }
+
+                        // 3. Last resort: first image in content
+                        if (!image) {
+                            image = $('#imgTagWrapperId img, #altImages img').first().attr('src') ||
+                                $('img').first().attr('src') ||
+                                '';
+                        }
+
+                        logger.info(`[SCRAPER DEBUG] Selected Image URL: "${image}"`);
 
                         let price = 0;
                         const priceText = $('[class*="price"], [id*="price"]').first().text().trim();
@@ -115,7 +207,7 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                         }
 
                         const product: ScrapedProductData = {
-                            url: targetUrl,
+                            url: url, // Use the ORIGINAL URL as requested
                             title: title || 'Unknown Product',
                             description: description,
                             images: image ? [image] : [],

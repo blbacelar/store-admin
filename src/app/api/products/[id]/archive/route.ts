@@ -3,6 +3,7 @@ import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
 import { requireAuth } from '@/app/lib/apiAuth';
 import { logger } from '@/app/lib/logger';
+import { productCache } from '@/app/lib/cache';
 
 export async function PATCH(
     request: Request,
@@ -33,6 +34,10 @@ export async function PATCH(
                 archived
             }
         });
+
+        // Invalidate cache
+        productCache.deletePattern('products:');
+        logger.info(`[CACHE INVALIDATE] PATCH archive products:`);
 
         notifyStoreService();
         return NextResponse.json({ success: true, archived: updatedProduct.archived });

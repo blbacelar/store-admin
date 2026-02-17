@@ -1,5 +1,8 @@
-import { PlaywrightCrawler } from 'crawlee';
+import { PlaywrightCrawler, log } from 'crawlee';
 import { chromium } from 'playwright';
+
+// Silence Crawlee logs to prevent stdout pollution
+log.setLevel(log.LEVELS.OFF);
 
 async function run() {
     const url = process.argv[2];
@@ -20,49 +23,53 @@ async function run() {
             launcher: chromium,
             launchOptions: {
                 headless: process.env.HEADLESS === 'false' ? false : true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox'] // Docker friendly
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
             }
         },
         browserPoolOptions: {
-            useFingerprints: true,
+            useFingerprints: false, // Turn off for speed
         },
-        requestHandlerTimeoutSecs: 60,
-        maxRequestsPerCrawl: 1, // Only one page
+        requestHandlerTimeoutSecs: 30,
+        navigationTimeoutSecs: 20,
+        maxRequestsPerCrawl: 1,
 
-        async requestHandler({ page, request, log }) {
-            console.error(`Processing ${request.url}`);
+        async requestHandler({ page, request }) {
+            console.error(`Scraping: ${request.url}`);
 
             try {
-                // Wait for body or specific element
-                await page.waitForLoadState('domcontentloaded');
+                // Wait for DOM content with a timeout
+                await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
 
-                // Check for "Continuar comprando" button
-                const buttons = await page.$$('button[type="submit"]');
+                // Check for "Continuar comprando" or "Continue shopping"
+                const buttons = await page.$$('button, input[type="submit"], span.a-button-text');
                 for (const button of buttons) {
-                    const text = await button.innerText();
-                    if (text.includes('Continuar comprando')) {
-                        console.error('Found Continue Shopping button, clicking...');
-                        await button.click();
-                        await page.waitForLoadState('networkidle');
-                        break;
-                    }
+                    try {
+                        const text = await button.innerText();
+                        if (text && (text.includes('Continuar comprando') || text.includes('Continue shopping'))) {
+                            console.error('Bypass button found, clicking...');
+                            await Promise.all([
+                                button.click(),
+                                page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => { })
+                            ]);
+                            break;
+                        }
+                    } catch (err) { }
                 }
             } catch (e) {
-                console.error('Wait/Click failed, proceeding...');
+                console.error(`Bypass/Load check failed: ${e.message}`);
             }
 
             const content = await page.content();
-
-            // Output JSON to stdout for the main app to read
             console.log(JSON.stringify({ success: true, content }));
         },
 
-        failedRequestHandler({ request, log }) {
+        failedRequestHandler({ request }) {
             console.error(JSON.stringify({ error: `Request failed: ${request.url}` }));
         },
     });
 
     await crawler.run([url]);
+    process.exit(0);
 }
 
 run().catch(err => {

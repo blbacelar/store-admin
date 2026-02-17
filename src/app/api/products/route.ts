@@ -3,6 +3,7 @@ import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
 import { requireAuth } from '@/app/lib/apiAuth';
 import { logger } from '@/app/lib/logger';
+import { productCache } from '@/app/lib/cache';
 
 export async function GET(request: Request) {
     // Check authentication
@@ -18,6 +19,15 @@ export async function GET(request: Request) {
 
         if (!storeId) {
             return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
+        }
+
+        // Cache Key
+        const cacheKey = `products:${storeId}:${branchId || 'all'}`;
+        const cachedProducts = productCache.get<any[]>(cacheKey);
+
+        if (cachedProducts) {
+            logger.info(`[CACHE HIT] ${cacheKey}`);
+            return NextResponse.json(cachedProducts);
         }
 
         const whereClause: { storeId: string; branchId?: string } = {
@@ -50,6 +60,10 @@ export async function GET(request: Request) {
             archived: product.archived
         }));
 
+        // Set Cache
+        productCache.set(cacheKey, formattedProducts);
+        logger.info(`[CACHE MISS] ${cacheKey} - Cached result`);
+
         return NextResponse.json(formattedProducts);
     } catch (error) {
         logger.error('Error fetching products:', error);
@@ -72,22 +86,30 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        if (!image) {
+            console.warn(`[WARNING] No image provided for product: ${title}`);
+        }
+
         // Parse price with locale awareness
         let parsedPrice = 0;
-        if (price && price !== 'No Price Found') {
-            // Remove currency symbols and non-numeric chars except separators
-            let cleaned = price.replace(/[^\d.,]/g, '');
-            const lastComma = cleaned.lastIndexOf(',');
-            const lastDot = cleaned.lastIndexOf('.');
-
-            if (lastComma > lastDot) {
-                // BR/EU format (e.g., 1.200,50 or 29,90) - Remove dots, swap comma to dot
-                cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+        if (price !== undefined && price !== null && price !== 'No Price Found') {
+            if (typeof price === 'number') {
+                parsedPrice = price;
             } else {
-                // US format (e.g., 1,200.50 or 29.90) - Remove commas
-                cleaned = cleaned.replace(/,/g, '');
+                // Remove currency symbols and non-numeric chars except separators
+                let cleaned = price.replace(/[^\d.,]/g, '');
+                const lastComma = cleaned.lastIndexOf(',');
+                const lastDot = cleaned.lastIndexOf('.');
+
+                if (lastComma > lastDot) {
+                    // BR/EU format (e.g., 1.200,50 or 29,90) - Remove dots, swap comma to dot
+                    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+                } else {
+                    // US format (e.g., 1,200.50 or 29.90) - Remove commas
+                    cleaned = cleaned.replace(/,/g, '');
+                }
+                parsedPrice = parseFloat(cleaned);
             }
-            parsedPrice = parseFloat(cleaned);
 
             if (isNaN(parsedPrice)) {
                 console.warn(`Failed to parse price: "${price}". Setting to 0.`);
@@ -130,6 +152,10 @@ export async function POST(request: Request) {
             data: productData
         });
 
+        // Invalidate cache for this store
+        productCache.deletePattern(`products:${storeId}`);
+        logger.info(`[CACHE INVALIDATE] POST products:${storeId}`);
+
         notifyStoreService();
         return NextResponse.json(newProduct);
     } catch (error) {
@@ -158,6 +184,10 @@ export async function DELETE(request: Request) {
                 id: id
             }
         });
+
+        // Invalidate all product caches (safer than fetching storeId first)
+        productCache.deletePattern('products:');
+        logger.info(`[CACHE INVALIDATE] DELETE products:`);
 
         notifyStoreService();
         return NextResponse.json({ message: 'Deleted' });

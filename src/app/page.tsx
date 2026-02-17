@@ -86,12 +86,7 @@ export default function Home() {
       if (branch) {
         url += `&branchId=${branch}`;
       }
-      const res = await fetch(url, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
+      const res = await fetch(url);
       const data = await res.json();
       if (Array.isArray(data)) {
         setProducts(data);
@@ -116,7 +111,12 @@ export default function Home() {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...product, storeId: activeStore.id, branchId: selectedBranchId || undefined })
+        body: JSON.stringify({
+          ...product,
+          image: product.images?.[0] || '', // Map images array to single image field
+          storeId: activeStore.id,
+          branchId: selectedBranchId || undefined
+        })
       });
       if (res.ok) {
         const newProduct = await res.json();
