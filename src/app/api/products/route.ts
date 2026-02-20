@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
-import { requireAuth } from '@/app/lib/apiAuth';
+import { requireAuth, verifyStoreAccess } from '@/app/lib/apiAuth';
 import { logger } from '@/app/lib/logger';
 import { productCache } from '@/app/lib/cache';
 
@@ -12,6 +12,8 @@ export async function GET(request: Request) {
         return auth.response;
     }
 
+    const { userId } = auth;
+
     try {
         const { searchParams } = new URL(request.url);
         const storeId = searchParams.get('storeId');
@@ -19,6 +21,13 @@ export async function GET(request: Request) {
 
         if (!storeId) {
             return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
+        }
+
+        // VERIFY STORE ACCESS
+        const hasAccess = await verifyStoreAccess(storeId, userId);
+        if (!hasAccess) {
+            logger.warn(`[AUTH] Unauthorized store access attempt: User ${userId} -> Store ${storeId}`);
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         // Cache Key
@@ -45,7 +54,7 @@ export async function GET(request: Request) {
                 category: true
             },
             orderBy: {
-                createdAt: 'desc'
+                order: 'asc'
             }
         });
 
@@ -54,7 +63,9 @@ export async function GET(request: Request) {
             sheetId: product.id.substring(product.id.length - 6), // Use last 6 chars as display ID
             title: product.name,
             price: product.price,
+            order: product.order,
             category: product.category?.name || 'Uncategorized',
+            categoryId: product.categoryId,
             image: product.imageUrl,
             url: product.affiliateUrl,
             archived: product.archived
@@ -78,8 +89,22 @@ export async function POST(request: Request) {
         return auth.response;
     }
 
+    const { userId } = auth;
+
     try {
-        const { title, price, image, url, storeId, branchId } = await request.json();
+        const body = await request.json();
+        const { title, price, image, url, storeId, branchId, categoryId, order } = body;
+
+        // VERIFY STORE ACCESS
+        if (!storeId) {
+            return NextResponse.json({ error: 'storeId is required' }, { status: 400 });
+        }
+
+        const hasAccess = await verifyStoreAccess(storeId, userId);
+        if (!hasAccess) {
+            logger.warn(`[AUTH] Unauthorized store post attempt: User ${userId} -> Store ${storeId}`);
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
         // Validate
         if (!title || !url || !storeId) {
@@ -123,30 +148,61 @@ export async function POST(request: Request) {
         // Final check for title after potential sanitization (future-proofing)
         const sanitizedTitle = title.trim();
         if (!sanitizedTitle) {
-            return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
+            return NextResponse.json({ error: 'error_title_required' }, { status: 400 });
+        }
+
+        // Determine product order
+        let productOrder: number;
+        if (order !== undefined && order !== null) {
+            productOrder = Number(order);
+            // Check for conflict
+            const conflict = await prisma.product.findFirst({
+                where: {
+                    storeId,
+                    categoryId: categoryId || null,
+                    order: productOrder,
+                    archived: false // Only conflict with active products
+                }
+            });
+            if (conflict) {
+                return NextResponse.json(
+                    { error: 'error_order_conflict' },
+                    { status: 400 }
+                );
+            }
+        } else {
+            // Auto-assign: max(order) + 1 within same category
+            const last = await prisma.product.findFirst({
+                where: { storeId, categoryId: categoryId ?? null },
+                orderBy: { order: 'desc' },
+                select: { order: true }
+            });
+            productOrder = last ? last.order + 1 : 1;
         }
 
         const productData: {
             name: string;
             price: number;
+            order: number;
             imageUrl: string;
             affiliateUrl: string;
             storeId: string;
             archived: boolean;
             branchId?: string;
+            categoryId?: string;
         } = {
             name: sanitizedTitle,
             price: parsedPrice,
+            order: productOrder,
             imageUrl: image || '',
             affiliateUrl: url,
             storeId: storeId,
             archived: false
         };
 
-        // Add branchId if provided
-        if (branchId) {
-            productData.branchId = branchId;
-        }
+        // Add branchId / categoryId if provided
+        if (branchId) productData.branchId = branchId;
+        if (categoryId) productData.categoryId = categoryId;
 
         const newProduct = await prisma.product.create({
             data: productData
@@ -171,12 +227,30 @@ export async function DELETE(request: Request) {
         return auth.response;
     }
 
+    const { userId } = auth;
+
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
         if (!id) {
             return NextResponse.json({ error: 'ID required' }, { status: 400 });
+        }
+
+        // VERIFY OWNERSHIP
+        const product = await prisma.product.findUnique({
+            where: { id },
+            select: { storeId: true }
+        });
+
+        if (!product) {
+            return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+        }
+
+        const hasAccess = await verifyStoreAccess(product.storeId!, userId);
+        if (!hasAccess) {
+            logger.warn(`[AUTH] Unauthorized delete attempt: User ${userId} -> Product ${id}`);
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         await prisma.product.delete({

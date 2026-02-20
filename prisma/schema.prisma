@@ -84,6 +84,7 @@ model Product {
   id           String    @id @default(auto()) @map("_id") @db.ObjectId
   name         String
   price        Float
+  order        Int       @default(0)
   categoryId   String?   @db.ObjectId
   category     Category? @relation(fields: [categoryId], references: [id])
   storeId      String?   @db.ObjectId
@@ -106,6 +107,7 @@ model Product {
 model Category {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   name      String
+  order     Int       @default(0)
   storeId   String    @db.ObjectId
   store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
   branchId  String?   @db.ObjectId

@@ -1,64 +1,58 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
+import { requireAuth } from "@/app/lib/apiAuth";
+import { logger } from "@/app/lib/logger";
 
 export async function POST(request: Request) {
+    // Check authentication
+    const auth = await requireAuth();
+    if (auth.authorized === false) {
+        return auth.response;
+    }
+
+    const { userId } = auth;
+
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session?.user?.email) {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
-
         const body = await request.json();
         const { name } = body;
 
         if (!name) {
-            return new NextResponse("Missing store name", { status: 400 });
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email }
-        });
-
-        if (!user) {
-            return new NextResponse("User not found", { status: 404 });
+            return NextResponse.json({ error: "Missing store name" }, { status: 400 });
         }
 
         const store = await prisma.store.create({
             data: {
                 name,
-                userId: user.id
+                userId: userId
             }
         });
 
         return NextResponse.json(store);
     } catch (error) {
-        console.error("STORE_POST_ERROR", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        logger.error("STORE_POST_ERROR", error);
+        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
     }
 }
 
 export async function GET() {
+    // Check authentication
+    const auth = await requireAuth();
+    if (auth.authorized === false) {
+        return auth.response;
+    }
+
+    const { userId } = auth;
+
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session?.user?.email) {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
-
         const stores = await prisma.store.findMany({
             where: {
-                user: {
-                    email: session.user.email
-                }
+                userId: userId
             }
         });
 
         return NextResponse.json(stores);
     } catch (error) {
-        console.error("STORES_GET_ERROR", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        logger.error("STORES_GET_ERROR", error);
+        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
     }
 }

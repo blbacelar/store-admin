@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, Store } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Label } from "@/components/ui/label";
+
 export default function SetupStorePage() {
     const { t } = useTranslation();
     const router = useRouter();
@@ -65,7 +67,9 @@ export default function SetupStorePage() {
                 <CardContent className="space-y-4">
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
+                            <Label htmlFor="storeName">{mounted ? t('store_name_label') : 'Store Name'}</Label>
                             <Input
+                                id="storeName"
                                 type="text"
                                 placeholder={mounted ? t('store_name_placeholder') : 'Store Name (e.g. My Store)'}
                                 value={name}

@@ -75,13 +75,13 @@ export default function Home() {
   };
 
   // Fetch products
-  const fetchProducts = async (storeId?: string, branchId?: string) => {
+  const fetchProducts = async (storeId?: string, branchId?: string, silent = false) => {
     const id = storeId || activeStore?.id;
     const branch = branchId || selectedBranchId;
     if (!id) return;
 
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       let url = `/api/products?storeId=${id}`;
       if (branch) {
         url += `&branchId=${branch}`;
@@ -94,7 +94,7 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to fetch products', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

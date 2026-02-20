@@ -1,29 +1,23 @@
 import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth";
+import { requireAuth } from "@/app/lib/apiAuth";
+import { logger } from "@/app/lib/logger";
 
 const DEFAULT_STORE_ID = process.env.DEFAULT_STORE_ID || "6984f69469a68016b608074b";
 
 export async function POST() {
+    // Check authentication
+    const auth = await requireAuth();
+    if (auth.authorized === false) {
+        return auth.response;
+    }
+
+    const { userId } = auth;
+
     try {
-        const session = await getServerSession(authOptions);
-
-        if (!session?.user?.email) {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
-
         if (!DEFAULT_STORE_ID) {
-            console.error('DEFAULT_STORE_ID environment variable not set');
-            return new NextResponse("Configuration error", { status: 500 });
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email }
-        });
-
-        if (!user) {
-            return new NextResponse("User not found", { status: 404 });
+            logger.error('DEFAULT_STORE_ID environment variable not set');
+            return NextResponse.json({ error: "Configuration error" }, { status: 500 });
         }
 
         // Check if default store exists
@@ -32,32 +26,32 @@ export async function POST() {
         });
 
         if (!defaultStore) {
-            return new NextResponse("Default store not found", { status: 404 });
+            logger.warn(`Default store ${DEFAULT_STORE_ID} not found in database`);
+            return NextResponse.json({ error: "Default store not found" }, { status: 404 });
         }
 
         // Check if user already has access to this store
-        const existingStore = await prisma.store.findFirst({
+        const existingStoreOwnership = await prisma.store.findFirst({
             where: {
                 id: DEFAULT_STORE_ID,
-                userId: user.id
+                userId: userId
             }
         });
 
-        if (existingStore) {
-            return NextResponse.json({ message: "User already has access", store: existingStore });
+        if (existingStoreOwnership) {
+            return NextResponse.json({ message: "User already has access", store: existingStoreOwnership });
         }
 
         // Update the store to assign it to this user
-        // Note: This assumes one user per store. If multiple users need access,
-        // you'll need a many-to-many relationship table
         const updatedStore = await prisma.store.update({
             where: { id: DEFAULT_STORE_ID },
-            data: { userId: user.id }
+            data: { userId: userId }
         });
 
+        logger.info(`Store ${DEFAULT_STORE_ID} auto-assigned to user ${userId}`);
         return NextResponse.json({ message: "User assigned to store", store: updatedStore });
     } catch (error) {
-        console.error("AUTO_ASSIGN_STORE_ERROR", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        logger.error("AUTO_ASSIGN_STORE_ERROR", error);
+        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
     }
 }

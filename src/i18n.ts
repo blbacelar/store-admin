@@ -9,7 +9,7 @@ const resources = {
         translation: {
             "all": "All",
             "dashboard_title": "Dashboard",
-            "dashboard_subtitle": "Manage your products - TESTE",
+            "dashboard_subtitle": "Manage your products",
             "dashboard_sub": "Automate your product tracking workflow",
             "manage_categories": "Manage Categories",
             "manage_branches": "Manage Branches",
@@ -92,14 +92,31 @@ const resources = {
             "categories": "Categories",
             "branches": "Branches",
             "archive": "Archive",
-            "unarchive": "Unarchive"
+            "unarchive": "Unarchive",
+            "order_label": "Order",
+            "click_to_expand": "Click to expand",
+            "click_to_collapse": "Click to collapse",
+            "grouped": "Grouped",
+            "list_view": "List View",
+            "all_categories": "All Categories",
+            "add_category": "Add New Category",
+            "email_label": "Email",
+            "password_label": "Password",
+            "store_name_label": "Store Name",
+            "url_label": "Product URL",
+            "description_label": "Description",
+            "product_updated_success": "Product updated successfully!",
+            "error_title_required": "Valid title is required",
+            "error_product_not_found": "Product not found",
+            "error_order_conflict": "This order number is already used in this category",
+            "error_update_failed": "Failed to update product"
         }
     },
     pt: {
         translation: {
             "all": "Todos",
             "dashboard_title": "Painel",
-            "dashboard_subtitle": "Gerencie seus produtos - TESTE",
+            "dashboard_subtitle": "Gerencie seus produtos",
             "dashboard_sub": "Automatize seu fluxo de rastreamento de produtos",
             "manage_categories": "Gerenciar Categorias",
             "manage_branches": "Gerenciar Locais",
@@ -182,7 +199,24 @@ const resources = {
             "categories": "Categorias",
             "branches": "Locais",
             "archive": "Arquivar",
-            "unarchive": "Desarquivar"
+            "unarchive": "Desarquivar",
+            "order_label": "Ordem",
+            "click_to_expand": "Clique para expandir",
+            "click_to_collapse": "Clique para recolher",
+            "grouped": "Agrupado",
+            "list_view": "Vista em Lista",
+            "all_categories": "Todas as Categorias",
+            "add_category": "Adicionar Nova Categoria",
+            "email_label": "E-mail",
+            "password_label": "Senha",
+            "store_name_label": "Nome da Loja",
+            "url_label": "URL do Produto",
+            "description_label": "Descrição",
+            "product_updated_success": "Produto atualizado com sucesso!",
+            "error_title_required": "Título válido é obrigatório",
+            "error_product_not_found": "Produto não encontrado",
+            "error_order_conflict": "Este número de ordem já está em uso nesta categoria",
+            "error_update_failed": "Falha ao atualizar o produto"
         }
     }
 };

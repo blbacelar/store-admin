@@ -7,6 +7,7 @@ export interface Product {
     sheetId: string;
     title: string;
     price: number;
+    order?: number;
     category: string;
     categoryId?: string | null;
     branchName?: string;

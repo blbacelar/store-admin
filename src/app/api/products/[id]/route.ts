@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { notifyStoreService } from '@/app/lib/socket';
-import { requireAuth } from '@/app/lib/apiAuth';
+import { requireAuth, verifyStoreAccess } from '@/app/lib/apiAuth';
 import { logger } from '@/app/lib/logger';
 
 export async function PUT(
@@ -14,25 +14,113 @@ export async function PUT(
         return auth.response;
     }
 
+    const { userId } = auth;
+
     try {
         const { id: idParam } = await params;
         const body = await request.json();
-        const { title, categoryId, branchId, description } = body;
+        logger.info(`[PRODUCT UPDATE] PUT called for ID: ${idParam} with body:`, body);
+
+        const { title, categoryId, branchId, description, order } = body;
         const sanitizedTitle = title?.trim();
         if (!sanitizedTitle) {
-            return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
+            logger.warn(`[PRODUCT UPDATE] 400: Valid title is required. Received: "${title}"`);
+            return NextResponse.json({ error: 'error_title_required' }, { status: 400 });
         }
 
+        // Fetch current product to know its storeId for access check
+        const currentProduct = await prisma.product.findUnique({
+            where: { id: idParam },
+            select: { id: true, categoryId: true, branchId: true, order: true, description: true, storeId: true }
+        });
+        if (!currentProduct) {
+            logger.warn(`[PRODUCT UPDATE] 404: Product not found: ${idParam}`);
+            return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+        }
+
+        // VERIFY STORE ACCESS
+        const hasAccess = await verifyStoreAccess(currentProduct.storeId!, userId);
+        if (!hasAccess) {
+            logger.warn(`[AUTH] Unauthorized product update attempt: User ${userId} -> Product ${idParam}`);
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // SANITIZATION (Strip HTML tags)
+        const sanitizedDescription = description ? description.replace(/<[^>]*>?/gm, '').trim() : null;
+
+        const updateData: any = {
+            name: sanitizedTitle,
+            categoryId: categoryId === undefined ? currentProduct.categoryId : (categoryId || null),
+            branchId: branchId === undefined ? currentProduct.branchId : (branchId || null),
+            description: description === undefined ? currentProduct.description : sanitizedDescription
+        };
+
+        if (order !== undefined && order !== null) {
+            const newOrder = Number(order);
+            const finalCategoryId = categoryId === "" ? null : (categoryId === undefined ? currentProduct.categoryId : (categoryId || null));
+
+            const isChangingOrder = newOrder !== currentProduct.order;
+            const isChangingCategory = finalCategoryId !== currentProduct.categoryId;
+
+            if (isChangingOrder || isChangingCategory) {
+                logger.info(`[PRODUCT REORDER] Shifting products for ${idParam}. OldCategory: ${currentProduct.categoryId}, NewCategory: ${finalCategoryId}, OldOrder: ${currentProduct.order}, NewOrder: ${newOrder}`);
+
+                await prisma.$transaction(async (tx) => {
+                    if (isChangingCategory) {
+                        // 1. Fill the gap in the old category
+                        if (currentProduct.order !== null) {
+                            await tx.product.updateMany({
+                                where: {
+                                    categoryId: currentProduct.categoryId,
+                                    order: { gt: currentProduct.order }
+                                },
+                                data: { order: { decrement: 1 } }
+                            });
+                        }
+
+                        // 2. Make space in the new category
+                        await tx.product.updateMany({
+                            where: {
+                                categoryId: finalCategoryId,
+                                order: { gte: newOrder }
+                            },
+                            data: { order: { increment: 1 } }
+                        });
+                    } else {
+                        // Intra-category reorder
+                        if (currentProduct.order !== null) {
+                            if (newOrder < currentProduct.order) {
+                                // Dragged up: shift items in between down
+                                await tx.product.updateMany({
+                                    where: {
+                                        categoryId: finalCategoryId,
+                                        order: { gte: newOrder, lt: currentProduct.order }
+                                    },
+                                    data: { order: { increment: 1 } }
+                                });
+                            } else if (newOrder > currentProduct.order) {
+                                // Dragged down: shift items in between up
+                                await tx.product.updateMany({
+                                    where: {
+                                        categoryId: finalCategoryId,
+                                        order: { gt: currentProduct.order, lte: newOrder }
+                                    },
+                                    data: { order: { decrement: 1 } }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+            updateData.order = newOrder;
+        }
+
+        logger.info(`[PRODUCT UPDATE] Updating product ${idParam} with data:`, updateData);
         const updatedProduct = await prisma.product.update({
             where: {
                 id: idParam
             },
-            data: {
-                name: sanitizedTitle,
-                categoryId: categoryId || null, // If empty string/undefined, disconnect category
-                branchId: branchId || null,
-                description: description || null
-            }
+            data: updateData
         });
 
         // Invalidate cache for products
@@ -58,6 +146,8 @@ export async function GET(
         return auth.response;
     }
 
+    const { userId } = auth;
+
     try {
         const { id: idParam } = await params;
 
@@ -75,11 +165,19 @@ export async function GET(
             return NextResponse.json({ error: 'Product not found' }, { status: 404 });
         }
 
+        // VERIFY STORE ACCESS
+        const hasAccess = await verifyStoreAccess(product.storeId!, userId);
+        if (!hasAccess) {
+            logger.warn(`[AUTH] Unauthorized product get attempt: User ${userId} -> Product ${idParam}`);
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const formattedProduct = {
             id: product.id,
             sheetId: product.id.substring(product.id.length - 6),
             title: product.name,
             price: product.price,
+            order: product.order,
             category: product.category?.name || 'Uncategorized',
             categoryId: product.categoryId,
             branchName: product.branch?.name,

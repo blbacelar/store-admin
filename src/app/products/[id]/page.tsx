@@ -4,8 +4,20 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ExternalLink, Loader2, Tag, Package, Edit, Save, X, MapPin, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface Category {
     id: string;
@@ -22,6 +34,7 @@ interface Product {
     sheetId: string;
     title: string;
     price: string;
+    order: number;
     category: string;
     categoryId?: string;
     branchId?: string;
@@ -49,6 +62,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const [editedDescription, setEditedDescription] = useState('');
     const [editedCategoryId, setEditedCategoryId] = useState('');
     const [editedBranchId, setEditedBranchId] = useState('');
+    const [editedOrder, setEditedOrder] = useState<number | ''>('');
 
     // Data lists
     const [categories, setCategories] = useState<Category[]>([]);
@@ -105,6 +119,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 setEditedDescription(data.description || '');
                 setEditedCategoryId(data.categoryId || '');
                 setEditedBranchId(data.branchId || '');
+                setEditedOrder(data.order ?? '');
             } else {
                 setError('Product not found');
             }
@@ -172,7 +187,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             console.error('Archive error:', err);
             // Revert on error
             setProduct({ ...product, archived: !newArchivedState });
-            alert(`Error: ${err.message || 'Failed to update archive status'}`);
+            toast.error(err.message || 'Failed to update archive status');
         }
     };
 
@@ -187,6 +202,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             setEditedDescription(product.description || '');
             setEditedCategoryId(product.categoryId || '');
             setEditedBranchId(product.branchId || '');
+            setEditedOrder(product.order ?? '');
             setIsCreatingCategory(false);
             setNewCategoryName('');
         }
@@ -204,12 +220,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     title: editedTitle,
                     description: editedDescription,
                     categoryId: editedCategoryId,
-                    branchId: editedBranchId
+                    branchId: editedBranchId,
+                    order: editedOrder !== '' ? Number(editedOrder) : undefined
                 })
             });
 
             if (!res.ok) {
-                throw new Error('Failed to update product');
+                const errorData = await res.json().catch(() => ({}));
+                const errorKey = errorData.error || 'error_update_failed';
+                throw new Error(t(errorKey));
             }
 
             // Find names for display
@@ -224,11 +243,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 categoryId: editedCategoryId,
                 category: newCategoryName,
                 branchId: editedBranchId,
-                branchName: newBranchName
+                branchName: newBranchName,
+                order: editedOrder !== '' ? Number(editedOrder) : product.order
             });
             setIsEditing(false);
+            toast.success(t('product_updated_success') || 'Product updated successfully');
         } catch (err: any) {
-            alert(err.message || t('fetch_error'));
+            toast.error(err.message || t('fetch_error'));
         } finally {
             setSaving(false);
         }
@@ -306,7 +327,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 {isEditing ? (
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">{mounted ? t('name_label') : 'Title'}</label>
+                                            <Label className="text-sm font-medium text-muted-foreground mb-2 block">{mounted ? t('name_label') : 'Title'}</Label>
                                             <Input
                                                 value={editedTitle}
                                                 onChange={(e) => setEditedTitle(e.target.value)}
@@ -329,7 +350,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <CardContent className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-8">
                             {/* Image Section */}
-                            <div className="flex items-center justify-center bg-white rounded-lg border p-8">
+                            <div className="flex items-center justify-center bg-white rounded-lg border p-8 shadow-sm">
                                 {product.image ? (
                                     <img
                                         src={product.image}
@@ -346,23 +367,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {/* Details Section */}
                             <div className="space-y-6">
                                 {/* Description Section */}
-                                <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-muted-foreground">{mounted ? t('description_label') : 'Description'}</Label>
                                     {isEditing ? (
-                                        <textarea
+                                        <Textarea
                                             value={editedDescription}
                                             onChange={(e) => setEditedDescription(e.target.value)}
-                                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="min-h-[120px] resize-none"
                                             rows={4}
                                         />
                                     ) : (
-                                        <p className="text-sm whitespace-pre-wrap">{product.description || 'No description available.'}</p>
+                                        <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap min-h-[40px]">
+                                            {product.description || 'No description available.'}
+                                        </p>
                                     )}
                                 </div>
 
+                                <Separator className="opacity-50" />
+
                                 {/* Category Section */}
-                                <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{mounted ? t('category_label') : 'Category'}</h3>
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-muted-foreground">{mounted ? t('category_label') : 'Category'}</Label>
                                     {isEditing ? (
                                         <div className="space-y-2">
                                             {isCreatingCategory ? (
@@ -411,21 +436,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-2">
-                                                    <select
-                                                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                                        value={editedCategoryId}
-                                                        onChange={(e) => setEditedCategoryId(e.target.value)}
-                                                    >
-                                                        <option value="">{mounted ? t('select_category') : 'Select Category...'}</option>
-                                                        {categories.map(c => (
-                                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                                        ))}
-                                                    </select>
+                                                    <Select value={editedCategoryId} onValueChange={setEditedCategoryId}>
+                                                        <SelectTrigger className="w-full h-9">
+                                                            <SelectValue placeholder={mounted ? t('select_category') : 'Select Category...'} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {categories.map(c => (
+                                                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => setIsCreatingCategory(true)}
                                                         title={mounted ? t('add') : 'Create New Category'}
+                                                        className="h-9"
                                                     >
                                                         <Tag className="h-4 w-4 mr-1" />
                                                         {mounted ? t('add') : 'Add'}
@@ -434,39 +460,61 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
-                                            <Tag className="h-4 w-4" />
-                                            <span>{product.category || (mounted ? t('uncategorized') : 'Uncategorized')}</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            <Badge variant="secondary" className="px-3 py-1 text-xs font-medium">
+                                                <Tag className="h-3 w-3 mr-1.5" />
+                                                {product.category || (mounted ? t('uncategorized') : 'Uncategorized')}
+                                            </Badge>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Branch Section */}
-                                <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{mounted ? t('branch_label') : 'Branch'}</h3>
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-muted-foreground">{mounted ? t('branch_label') : 'Branch'}</Label>
                                     {isEditing ? (
                                         <div className="space-y-2">
-                                            <select
-                                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                                value={editedBranchId}
-                                                onChange={(e) => setEditedBranchId(e.target.value)}
-                                                disabled={true}
-                                            >
-                                                <option value="">{mounted ? 'Select Branch...' : 'Select Branch...'}</option>
-                                                {branches.map(b => (
-                                                    <option key={b.id} value={b.id}>{b.name}</option>
-                                                ))}
-                                            </select>
+                                            <Select value={editedBranchId} onValueChange={setEditedBranchId} disabled={true}>
+                                                <SelectTrigger className="w-full h-9">
+                                                    <SelectValue placeholder={mounted ? 'Select Branch...' : 'Select Branch...'} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {branches.map(b => (
+                                                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     ) : (
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary rounded-full">
-                                            <MapPin className="h-4 w-4" />
-                                            <span>{product.branchName || 'No Branch'}</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            <Badge variant="outline" className="px-3 py-1 text-xs font-medium">
+                                                <MapPin className="h-3 w-3 mr-1.5" />
+                                                {product.branchName || 'No Branch'}
+                                            </Badge>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Action Buttons */}
+                                {/* Order Section */}
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-medium text-muted-foreground">{mounted ? t('order_label') : 'Order'}</Label>
+                                    <div className="flex items-center gap-2">
+                                        {isEditing ? (
+                                            <Input
+                                                type="number"
+                                                value={editedOrder}
+                                                onChange={(e) => setEditedOrder(e.target.value === '' ? '' : Number(e.target.value))}
+                                                className="w-24 h-9"
+                                                min={1}
+                                                placeholder="Auto"
+                                            />
+                                        ) : (
+                                            <Badge variant="outline" className="px-3 py-1 text-xs font-mono font-medium">
+                                                {product.order ?? '—'}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
                                 <div className="pt-4 space-y-2">
                                     {isEditing && (
                                         <div className="flex gap-2 mb-2">
@@ -483,7 +531,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     {product.url && product.url !== '#' && (
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium text-muted-foreground">
-                                                Product URL
+                                                {mounted ? t('url_label') : 'Product URL'}
                                             </label>
                                             <div className="flex gap-2">
                                                 <Input
@@ -507,34 +555,46 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
 
                         {/* Additional Info */}
-                        <div className="border-t pt-6">
-                            <h3 className="text-lg font-semibold mb-4">{mounted ? t('product_info') : 'Product Information'}</h3>
+                        <div className="space-y-4 pt-4">
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-semibold">{mounted ? t('product_info') : 'Product Information'}</h3>
+                            </div>
+                            <Separator />
                             <div className="grid gap-4">
-                                <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">{mounted ? t('name_label') : 'Title'}</span>
-                                    <span className="font-medium text-right max-w-md">{isEditing ? editedTitle : product.title}</span>
+                                <div className="flex justify-between items-center py-1 border-b border-muted/50">
+                                    <Label className="text-muted-foreground font-normal">{mounted ? t('name_label') : 'Title'}</Label>
+                                    <span className="font-medium text-right max-w-md text-sm">{isEditing ? editedTitle : product.title}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">{mounted ? t('category_label') : 'Category'}</span>
-                                    <span className="font-medium">
+                                <div className="flex justify-between items-center py-1 border-b border-muted/50">
+                                    <Label className="text-muted-foreground font-normal">{mounted ? t('category_label') : 'Category'}</Label>
+                                    <Badge variant="secondary" className="font-medium">
                                         {isEditing
                                             ? (categories.find(c => c.id === editedCategoryId)?.name || (mounted ? t('uncategorized') : 'Uncategorized'))
                                             : (product.category || (mounted ? t('uncategorized') : 'Uncategorized'))
                                         }
-                                    </span>
+                                    </Badge>
                                 </div>
-                                <div className="flex justify-between items-center py-2 border-b">
-                                    <span className="text-muted-foreground">{mounted ? t('branch_label') : 'Branch'}</span>
-                                    <span className="font-medium">
+                                <div className="flex justify-between items-center py-1 border-b border-muted/50">
+                                    <Label className="text-muted-foreground font-normal">{mounted ? t('branch_label') : 'Branch'}</Label>
+                                    <Badge variant="outline" className="font-medium">
                                         {isEditing
                                             ? (branches.find(b => b.id === editedBranchId)?.name || 'No Branch')
                                             : (product.branchName || 'No Branch')
                                         }
+                                    </Badge>
+                                </div>
+                                <div className="flex justify-between items-center py-1 border-b border-muted/50 gap-4">
+                                    <Label className="text-muted-foreground font-normal">{mounted ? t('order_label') : 'Order'}</Label>
+                                    <span className="font-mono text-sm text-right pl-4">
+                                        {isEditing
+                                            ? (editedOrder !== '' ? editedOrder : 'Auto')
+                                            : product.order
+                                        }
                                     </span>
                                 </div>
-                                <div className="flex justify-between items-center py-2">
-                                    <span className="text-muted-foreground">{mounted ? t('product_id') : 'Product ID'}</span>
-                                    <span className="font-medium">{product.sheetId}</span>
+                                <div className="flex justify-between items-center py-1">
+                                    <Label className="text-muted-foreground font-normal">{mounted ? t('product_id') : 'Product ID'}</Label>
+                                    <span className="font-mono text-sm">{product.sheetId}</span>
                                 </div>
                             </div>
                         </div>

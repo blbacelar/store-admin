@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+
 export default function RegisterPage() {
     const { t } = useTranslation();
     const router = useRouter();
@@ -71,22 +74,24 @@ export default function RegisterPage() {
                         onClick={handleGoogleSignUp}
                         disabled={isLoading}
                     >
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <img src="https://www.google.com/favicon.ico" className="mr-2 h-4 w-4" alt="Google" />}
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <div className="mr-2 h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center font-bold text-[10px]">G</div>}
                         {mounted ? t('continue_google') : 'Continue with Google'}
                     </Button>
 
                     <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-muted" />
+                        <div className="absolute inset-0 flex items-center px-4">
+                            <Separator />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card px-2 text-muted-foreground">{mounted ? t('or_continue_with') : 'Or continue with'}</span>
+                            <span className="bg-card/50 px-2 text-muted-foreground backdrop-blur-sm">{mounted ? t('or_continue_with') : 'Or continue with'}</span>
                         </div>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
+                            <Label htmlFor="name">{mounted ? t('full_name') : 'Full Name'}</Label>
                             <Input
+                                id="name"
                                 type="text"
                                 placeholder={mounted ? t('full_name') : 'Full Name'}
                                 value={name}
@@ -97,7 +102,9 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
+                            <Label htmlFor="email">{mounted ? t('email_label') : 'Email'}</Label>
                             <Input
+                                id="email"
                                 type="email"
                                 placeholder={mounted ? t('email_placeholder') : 'Email'}
                                 value={email}
@@ -108,7 +115,9 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
+                            <Label htmlFor="password">{mounted ? t('password_label') : 'Password'}</Label>
                             <Input
+                                id="password"
                                 type="password"
                                 placeholder={mounted ? t('create_password') : 'Create Password'}
                                 value={password}
@@ -136,6 +145,14 @@ export default function RegisterPage() {
                         </p>
                     </div>
                 </CardContent>
+                <div className="mt-6 text-center text-xs text-muted-foreground space-y-2 pb-6">
+                    <p>Private Project - Authorized Access Only</p>
+                    <div className="flex justify-center space-x-4">
+                        <a href="/privacy" className="hover:underline hover:text-primary transition-colors">Privacy Policy</a>
+                        <span>•</span>
+                        <a href="/terms" className="hover:underline hover:text-primary transition-colors">Terms of Service</a>
+                    </div>
+                </div>
             </Card>
         </div>
     );
