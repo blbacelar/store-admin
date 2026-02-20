@@ -75,6 +75,6 @@ COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/package.json ./package.json
 COPY --from=base /app/prisma ./prisma
 
-EXPOSE 3000
+EXPOSE 3005
 
-CMD ["npm", "start"]
+CMD ["npm", "run", "server"]

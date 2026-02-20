@@ -93,7 +93,7 @@ To use `admin.thelittlebigentrepreneur.com`:
 2.  Go to the **Domains** tab.
 3.  Click **+ Add Domain**.
 4.  Enter: `admin.thelittlebigentrepreneur.com`.
-5.  Make sure the **Port** is set to `3000`.
+5.  Make sure the **Port** is set to `3005` (avoiding port 3000 which conflicts with EasyPanel).
 6.  Enable **HTTPS** (EasyPanel will automatically get an SSL certificate).
 7.  Click **Save**.
 

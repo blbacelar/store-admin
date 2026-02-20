@@ -9,8 +9,8 @@ import { initializeEnv } from './src/app/lib/env';
 initializeEnv();
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
-const port = 3002;
+const hostname = '0.0.0.0';
+const port = Number(process.env.PORT) || 3005;
 
 // Initialize Next.js app
 const app = next({ dev, hostname, port });
