@@ -1,0 +1,14 @@
+name: Deploy to EasyPanel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger EasyPanel Deployment Webhook
+        run: curl -X GET "http://109.123.254.167:3000/api/deploy/88a909854a3f3f262736cd5012b781af504e3e24d411e7bc"
