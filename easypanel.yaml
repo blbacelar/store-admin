@@ -1,0 +1,8 @@
+services:
+  - type: app
+    name: store-admin
+    build:
+      dockerfile: Dockerfile
+    command: npm run server
+    ports:
+      - "3005:3005"
