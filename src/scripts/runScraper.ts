@@ -26,6 +26,7 @@ async function runScraper() {
                 '--disable-web-security',
                 '--disable-features=IsolateOrigins,site-per-process',
             ],
+            // @ts-ignore
             ignoreHTTPSErrors: true
         });
 

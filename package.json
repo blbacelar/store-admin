@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "next build --webpack && tsc --project tsconfig.server.json",
     "start": "npm run server",
     "start:next": "next start",
     "lint": "eslint",
-    "server": "ts-node --project tsconfig.server.json server.ts",
+    "server": "node dist-server/server.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {
