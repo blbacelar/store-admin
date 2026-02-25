@@ -1,8 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { logger } from './logger';
 import type { ScrapedProductData } from '@/types';
 import * as https from 'https';
 import * as cheerio from 'cheerio';
+import crypto from 'crypto';
+import os from 'os';
+import fs from 'fs';
+import { spawn } from 'child_process';
+import path from 'path';
 
 // Declare process type to avoid "process" not found errors if types are missing
 declare const process: {
@@ -45,12 +49,6 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
         return new Promise(async (resolve, reject) => {
             try {
                 // Run standalone scraper script
-                const { spawn } = await import('child_process');
-                const path = await import('path');
-                const crypto = await import('crypto');
-                const os = await import('os');
-                const fs = await import('fs');
-
                 const uniqueStorageDir = path.join(os.tmpdir(), `crawlee-temp-${crypto.randomUUID()}`);
 
                 // Path to script inside the Docker container or local environment

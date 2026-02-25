@@ -55,14 +55,30 @@ export async function PUT(
             description: description === undefined ? currentProduct.description : sanitizedDescription
         };
 
-        if (order !== undefined && order !== null) {
-            const newOrder = Number(order);
-            const finalCategoryId = categoryId === "" ? null : (categoryId === undefined ? currentProduct.categoryId : (categoryId || null));
+        const finalCategoryId = updateData.categoryId;
+        const isChangingCategory = finalCategoryId !== currentProduct.categoryId;
 
-            const isChangingOrder = newOrder !== currentProduct.order;
-            const isChangingCategory = finalCategoryId !== currentProduct.categoryId;
+        let newOrder: number | null = null;
+        let isChangingOrder = false;
 
-            if (isChangingOrder || isChangingCategory) {
+        if (order !== undefined && order !== null && order !== '') {
+            newOrder = Number(order);
+            isChangingOrder = newOrder !== currentProduct.order;
+        } else if (isChangingCategory) {
+            // Auto order at the end of the new category
+            const last = await prisma.product.findFirst({
+                where: { storeId: currentProduct.storeId, categoryId: finalCategoryId },
+                orderBy: { order: 'desc' },
+                select: { order: true }
+            });
+            newOrder = last && last.order !== null ? last.order + 1 : 1;
+            isChangingOrder = newOrder !== currentProduct.order;
+        }
+
+        if (isChangingOrder || isChangingCategory) {
+            // If they provided an order to effectively change to what we already have, proceed carefully.
+            // If newOrder is null, it means no order provided and category didn't change.
+            if (newOrder !== null) {
                 logger.info(`[PRODUCT REORDER] Shifting products for ${idParam}. OldCategory: ${currentProduct.categoryId}, NewCategory: ${finalCategoryId}, OldOrder: ${currentProduct.order}, NewOrder: ${newOrder}`);
 
                 await prisma.$transaction(async (tx) => {
@@ -111,8 +127,8 @@ export async function PUT(
                         }
                     }
                 });
+                updateData.order = newOrder;
             }
-            updateData.order = newOrder;
         }
 
         logger.info(`[PRODUCT UPDATE] Updating product ${idParam} with data:`, updateData);

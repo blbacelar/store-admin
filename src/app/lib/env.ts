@@ -21,11 +21,8 @@ export function validateEnv() {
     }
 
     // Warn about optional but recommended variables
-    const recommended = [
-        'NEXT_PUBLIC_APP_URL',
-        'NEXT_PUBLIC_SOCKET_URL',
-        'BRAZIL_BRANCH_ID',
-        'USA_BRANCH_ID'
+    const recommended: string[] = [
+        // Add backend-specific recommended variables here if needed
     ];
 
     const missingRecommended = recommended.filter(key => !process.env[key]);

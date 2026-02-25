@@ -413,6 +413,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                                     const newCat = await res.json();
                                                                     setCategories(prev => [...prev, newCat]);
                                                                     setEditedCategoryId(newCat.id);
+                                                                    setEditedOrder(''); // Reset order to trigger backend auto-append
                                                                     setIsCreatingCategory(false);
                                                                     setNewCategoryName('');
                                                                 }
@@ -436,7 +437,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-2">
-                                                    <Select value={editedCategoryId} onValueChange={setEditedCategoryId}>
+                                                    <Select
+                                                        value={editedCategoryId}
+                                                        onValueChange={(val) => {
+                                                            setEditedCategoryId(val);
+                                                            setEditedOrder(''); // Reset order to trigger backend auto-append
+                                                        }}
+                                                    >
                                                         <SelectTrigger className="w-full h-9">
                                                             <SelectValue placeholder={mounted ? t('select_category') : 'Select Category...'} />
                                                         </SelectTrigger>
