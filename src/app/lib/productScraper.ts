@@ -47,21 +47,32 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                 // Run standalone scraper script
                 const { spawn } = await import('child_process');
                 const path = await import('path');
+                const crypto = await import('crypto');
+                const os = await import('os');
+                const fs = await import('fs');
+
+                const uniqueStorageDir = path.join(os.tmpdir(), `crawlee-temp-${crypto.randomUUID()}`);
 
                 // Path to script inside the Docker container or local environment
                 const scriptPath = path.join(process.cwd(), 'public', 'scripts', 'scraper-crawlee.mjs');
 
-                logger.debug(`Spawning scraper script at: ${scriptPath}`);
+                logger.debug(`Spawning scraper script at: ${scriptPath} with storage ${uniqueStorageDir}`);
 
                 const child = spawn('node', [scriptPath, targetUrl], {
-                    env: process.env as any
+                    env: {
+                        ...process.env,
+                        CRAWLEE_STORAGE_DIR: uniqueStorageDir,
+                        CRAWLEE_SYSTEM_INFO_INTERVAL_MILLIS: '0',
+                        CRAWLEE_AVAILABLE_MEMORY_RATIO: '0',
+                        CRAWLEE_SYSTEM_INFO_V2: 'false'
+                    } as any
                 }) as any;
 
-                let stdoutData = '';
+                const stdoutChunks: Buffer[] = [];
                 let stderrData = '';
 
-                child.stdout.on('data', (data: any) => {
-                    stdoutData += data.toString();
+                child.stdout.on('data', (data: Buffer) => {
+                    stdoutChunks.push(data);
                 });
 
                 child.stderr.on('data', (data: any) => {
@@ -71,6 +82,16 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
 
                 child.on('close', (code: any) => {
                     logger.info(`Scraper process closed with code ${code}`);
+
+                    // Cleanup the temporary Crawlee storage directory
+                    try {
+                        if (fs.existsSync(uniqueStorageDir)) {
+                            fs.rmSync(uniqueStorageDir, { recursive: true, force: true });
+                        }
+                    } catch (e) {
+                        logger.error(`Failed to cleanup temp storage: ${e}`);
+                    }
+
                     if (code !== 0) {
                         logger.error(`Scraper script exited with code ${code}`);
                         reject(new Error(`Scraper failed: ${stderrData || 'Unknown error'}`));
@@ -78,6 +99,7 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                     }
 
                     try {
+                        const stdoutData = Buffer.concat(stdoutChunks).toString('utf8');
                         logger.debug(`Parsing scraper output (size: ${stdoutData.length})`);
                         // Try to parse the whole output first
                         let result;
@@ -90,7 +112,8 @@ export async function scrapeProduct(url: string): Promise<ScrapedProductData | n
                             try {
                                 result = JSON.parse(lastLine);
                             } catch (e2) {
-                                throw new Error(`Failed to parse scraper output. Raw output: ${stdoutData.substring(0, 200)}...`);
+                                logger.error(`Failed to parse chunk. First 100 chars: ${stdoutData.substring(0, 100)}\nLast 50: ${stdoutData.substring(stdoutData.length - 50)}`);
+                                throw new Error(`Failed to parse scraper output.`);
                             }
                         }
 
