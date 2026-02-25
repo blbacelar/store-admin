@@ -44,13 +44,14 @@ const nextConfig: NextConfig = {
     'puppeteer-core',
     'puppeteer-extra',
     'puppeteer-extra-plugin-stealth',
-    '@sparticuz/chromium'
+    '@sparticuz/chromium',
+    'undici'
   ],
   typescript: {
     ignoreBuildErrors: true,
   },
   webpack: (config) => {
-    config.externals = [...(config.externals || []), 'puppeteer', 'puppeteer-core', 'puppeteer-extra', 'puppeteer-extra-plugin-stealth', '@sparticuz/chromium'];
+    config.externals = [...(config.externals || []), 'puppeteer', 'puppeteer-core', 'puppeteer-extra', 'puppeteer-extra-plugin-stealth', '@sparticuz/chromium', 'undici'];
     return config;
   },
 
