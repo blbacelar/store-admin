@@ -1,15 +1,7 @@
-import { PlaywrightCrawler, log, Configuration } from 'crawlee';
-import { chromium } from 'playwright';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
-// Silence Crawlee logs to prevent stdout pollution
-log.setLevel(log.LEVELS.OFF);
-// Make sure ANY active logger writes to stderr instead of stdout
-if (log.setOptions) log.setOptions({ logger: { log: (level, msg) => console.error(msg) } });
-
-// Disable system info tracking to avoid wmic serialization bug on non-English Windows
-const config = new Configuration({
-    systemInfoIntervalMillis: 0,
-});
+puppeteer.use(StealthPlugin());
 
 async function run() {
     const url = process.argv[2];
@@ -18,74 +10,80 @@ async function run() {
         process.exit(1);
     }
 
-    // Crawlee persists state by default. We should disable persistence for one-off scrape.
-    // Or set unique storage dir?
-    // We set 'persistStorage: false' if possible, or clean up.
+    // Launch Puppeteer with optimal stealth settings
+    const browser = await puppeteer.launch({
+        headless: 'new', // Try modern headless mode
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-infobars',
+            '--window-position=0,0',
+            '--ignore-certifcate-errors',
+            '--ignore-certifcate-errors-spki-list',
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        ],
+        ignoreDefaultArgs: ['--enable-automation']
+    });
 
-    // Actually, Crawlee uses ./storage by default.
-    // We might want to use a unique session or clear storage?
+    try {
+        const page = await browser.newPage();
 
-    const crawler = new PlaywrightCrawler({
-        launchContext: {
-            launcher: chromium,
-            launchOptions: {
-                headless: process.env.HEADLESS === 'false' ? false : true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
+        // Anti-bot evasions
+        await page.setExtraHTTPHeaders({
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Upgrade-Insecure-Requests': '1',
+            'sec-fetch-site': 'none',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-user': '?1',
+            'sec-fetch-dest': 'document',
+        });
+
+        // Randomize viewport size slightly inside standard bounds
+        await page.setViewport({
+            width: 1366 + Math.floor(Math.random() * 100),
+            height: 768 + Math.floor(Math.random() * 100)
+        });
+
+        console.error(`Scraping: ${url}`);
+
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+        // Wait a small amount for dynamic rendering
+        await new Promise(r => setTimeout(r, 2000));
+
+        // Check for "Continuar comprando" or "Continue shopping" block
+        try {
+            const isProductPage = await page.$('#productTitle, #title') !== null;
+
+            if (!isProductPage) {
+                // Find button by xpath containing text
+                const continueButtons = await page.$$("::-p-xpath(//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'continuar') or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'continue')])");
+
+                if (continueButtons.length > 0) {
+                    const btn = continueButtons[0];
+                    console.error('Bypass button found, clicking forcefully...');
+                    // Use a more robust click using page.evaluate
+                    await page.evaluate(b => b.click(), btn);
+                    // Wait for navigation after clicking
+                    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => { });
+                } else {
+                    console.error('Bypass block detected, but no continue button found. Returning HTML to caller.');
+                }
             }
-        },
-        browserPoolOptions: {
-            useFingerprints: false, // Turn off for speed
-        },
-        requestHandlerTimeoutSecs: 30,
-        navigationTimeoutSecs: 20,
-        maxRequestsPerCrawl: 1,
+        } catch (e) {
+            console.error(`Bypass/Load check failed: ${e.message}`);
+        }
 
-        async requestHandler({ page, request }) {
-            console.error(`Scraping: ${request.url}`);
+        const content = await page.content();
+        console.log(JSON.stringify({ success: true, content }));
 
-            try {
-                // Wait for DOM content with a timeout
-                await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
-
-                // Check for "Continuar comprando" or "Continue shopping"
-                try {
-                    // Make sure we are not already on the actual product page.
-                    // The product page has a navigation flyout link that also says "Continuar comprando".
-                    const isProductPage = await page.locator('#productTitle, #title').count() > 0;
-
-                    if (!isProductPage) {
-                        const continueButton = page.locator('text=/Continuar comprando|Continue shopping/i >> visible=true').nth(0);
-                        const count = await continueButton.count();
-
-                        if (count > 0) {
-                            // Verify it's not a navigation link just in case
-                            const className = await continueButton.getAttribute('class').catch(() => '');
-                            if (!className || (!className.includes('nav-') && !className.includes('nav_'))) {
-                                console.error('Bypass button found, clicking forcefully...');
-                                await Promise.all([
-                                    page.waitForSelector('#productTitle, #title', { timeout: 15000 }).catch(() => { }),
-                                    continueButton.evaluate(b => b.click())
-                                ]);
-                            }
-                        }
-                    }
-                } catch (e) { }
-            } catch (e) {
-                console.error(`Bypass/Load check failed: ${e.message}`);
-            }
-
-            const content = await page.content();
-            console.log(JSON.stringify({ success: true, content }));
-        },
-
-        failedRequestHandler({ request }) {
-            console.error(JSON.stringify({ error: `Request failed: ${request.url}` }));
-        },
-    }, config); // Pass configuration to specific crawler instance
-
-    await crawler.run([url]);
-    await new Promise(r => setTimeout(r, 500)); // Ensure stdout is flushed to pipe
-    process.exit(0);
+    } catch (err) {
+        console.error(JSON.stringify({ error: `Request failed: ${err.message}` }));
+    } finally {
+        await browser.close();
+    }
 }
 
 run().catch(err => {

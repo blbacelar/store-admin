@@ -8,14 +8,21 @@ import { LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function NavBar() {
     const { t } = useTranslation();
     const [mounted, setMounted] = useState(false);
+    const pathname = usePathname();
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const hiddenRoutes = ['/login', '/register'];
+    if (hiddenRoutes.includes(pathname)) {
+        return null;
+    }
 
     return (
         <nav className="border-b bg-card">

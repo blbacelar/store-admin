@@ -21,7 +21,7 @@ export async function PUT(
         const body = await request.json();
         logger.info(`[PRODUCT UPDATE] PUT called for ID: ${idParam} with body:`, body);
 
-        const { title, categoryId, branchId, description, order } = body;
+        const { title, categoryId, branchId, description, order, url } = body;
         const sanitizedTitle = title?.trim();
         if (!sanitizedTitle) {
             logger.warn(`[PRODUCT UPDATE] 400: Valid title is required. Received: "${title}"`);
@@ -54,6 +54,10 @@ export async function PUT(
             branchId: branchId === undefined ? currentProduct.branchId : (branchId || null),
             description: description === undefined ? currentProduct.description : sanitizedDescription
         };
+
+        if (url !== undefined) {
+            updateData.affiliateUrl = url ? url.trim() : null;
+        }
 
         const finalCategoryId = updateData.categoryId;
         const isChangingCategory = finalCategoryId !== currentProduct.categoryId;
@@ -207,6 +211,67 @@ export async function GET(
         return NextResponse.json(formattedProduct);
     } catch (error) {
         logger.error('Error fetching product:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+export async function DELETE(
+    _request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    // Check authentication
+    const auth = await requireAuth();
+    if (auth.authorized === false) {
+        return auth.response;
+    }
+
+    const { userId } = auth;
+
+    try {
+        const { id: idParam } = await params;
+
+        const currentProduct = await prisma.product.findUnique({
+            where: { id: idParam },
+            select: { id: true, storeId: true, categoryId: true, order: true }
+        });
+
+        if (!currentProduct) {
+            return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+        }
+
+        // VERIFY STORE ACCESS
+        const hasAccess = await verifyStoreAccess(currentProduct.storeId!, userId);
+        if (!hasAccess) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            // Delete the product
+            await tx.product.delete({
+                where: { id: idParam }
+            });
+
+            // Shift orders in the same category
+            if (currentProduct.order !== null) {
+                await tx.product.updateMany({
+                    where: {
+                        categoryId: currentProduct.categoryId,
+                        order: { gt: currentProduct.order }
+                    },
+                    data: { order: { decrement: 1 } }
+                });
+            }
+        });
+
+        // Invalidate cache for products
+        const { productCache } = await import('@/app/lib/cache');
+        productCache.deletePattern('products:');
+
+        notifyStoreService();
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        logger.error('Error deleting product:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

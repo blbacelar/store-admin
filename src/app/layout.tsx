@@ -5,6 +5,7 @@ import I18nInitializer from "@/components/I18nInitializer";
 import AuthContext from "@/context/AuthContext";
 import { BranchProvider } from "@/context/BranchContext";
 import { Toaster } from "sonner";
+import NavBar from "@/app/components/NavBar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -41,6 +42,7 @@ export default function RootLayout({
         <AuthContext>
           <BranchProvider>
             <I18nInitializer>
+              <NavBar />
               {children}
               <Toaster position="top-center" richColors />
             </I18nInitializer>

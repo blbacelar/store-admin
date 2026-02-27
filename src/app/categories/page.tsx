@@ -16,7 +16,6 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useBranch } from '@/context/BranchContext';
-import NavBar from '../components/NavBar';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -422,7 +421,6 @@ export default function CategoriesPage() {
 
     return (
         <>
-            <NavBar />
             <main className="min-h-screen bg-background text-foreground py-12 px-4 md:px-8">
                 <div className="max-w-4xl mx-auto space-y-8">
                     <header className="flex items-center justify-between">

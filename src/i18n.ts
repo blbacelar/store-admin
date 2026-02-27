@@ -109,7 +109,11 @@ const resources = {
             "error_title_required": "Valid title is required",
             "error_product_not_found": "Product not found",
             "error_order_conflict": "This order number is already used in this category",
-            "error_update_failed": "Failed to update product"
+            "error_update_failed": "Failed to update product",
+            "error_delete_failed": "Failed to delete product",
+            "product_deleted_success": "Product deleted successfully!",
+            "delete_confirm_title": "Are you absolutely sure?",
+            "delete_confirm_desc": "This action cannot be undone. This will permanently delete your product from our servers."
         }
     },
     pt: {
@@ -216,7 +220,11 @@ const resources = {
             "error_title_required": "Título válido é obrigatório",
             "error_product_not_found": "Produto não encontrado",
             "error_order_conflict": "Este número de ordem já está em uso nesta categoria",
-            "error_update_failed": "Falha ao atualizar o produto"
+            "error_update_failed": "Falha ao atualizar o produto",
+            "error_delete_failed": "Falha ao excluir o produto",
+            "product_deleted_success": "Produto excluído com sucesso!",
+            "delete_confirm_title": "Tem certeza absoluta?",
+            "delete_confirm_desc": "Esta ação não pode ser desfeita. Isso excluirá permanentemente seu produto de nossos servidores."
         }
     }
 };

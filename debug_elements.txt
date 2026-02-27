@@ -1,0 +1,2 @@
+[A] class="nav-link nav-item" href="/hz/mobile/mission?ref_=nav_AccountFlyout_ci_mcx_mi_d_nf" text="Continuar comprando"
+[A] class="a-size-medium a-link-normal" href="#" text="Faça login para continuar"

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useBranch } from '@/context/BranchContext';
-import NavBar from './components/NavBar';
 import AddProduct from './components/AddProduct';
 import ProductList from './components/ProductList';
 import { Button } from '@/components/ui/button';
@@ -150,7 +149,6 @@ export default function Home() {
 
   return (
     <>
-      <NavBar />
       <main className="min-h-screen bg-background text-foreground py-12 px-4 md:px-8">
         <div className="max-w-6xl mx-auto space-y-8">
           <header className="flex items-center justify-between">
