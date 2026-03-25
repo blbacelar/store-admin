@@ -7,9 +7,7 @@ export function validateEnv() {
     const required = [
         'DATABASE_URL',
         'NEXTAUTH_SECRET',
-        'NEXTAUTH_URL',
-        'GOOGLE_CLIENT_ID',
-        'GOOGLE_CLIENT_SECRET'
+        'NEXTAUTH_URL'
     ];
 
     const missing = required.filter(key => !process.env[key]);

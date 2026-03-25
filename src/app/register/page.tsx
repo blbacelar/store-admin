@@ -1,16 +1,14 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 
 export default function RegisterPage() {
     const { t } = useTranslation();
@@ -22,10 +20,13 @@ export default function RegisterPage() {
     const [error, setError] = useState("");
     const [mounted, setMounted] = useState(false);
 
-    const handleGoogleSignUp = () => {
-        setIsLoading(true);
-        signIn("google");
+    const passwordChecks = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[^A-Za-z0-9]/.test(password),
     };
+    const showPasswordHints = password.length > 0;
 
     useEffect(() => {
         setMounted(true);
@@ -49,7 +50,7 @@ export default function RegisterPage() {
                 const data = await res.text();
                 setError(data || "Registration failed");
             }
-        } catch (err) {
+        } catch {
             setError("Something went wrong");
         } finally {
             setIsLoading(false);
@@ -68,25 +69,6 @@ export default function RegisterPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Button
-                        variant="outline"
-                        className="w-full h-11 border-primary/20 hover:bg-primary/5 transition-all duration-300"
-                        onClick={handleGoogleSignUp}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <div className="mr-2 h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center font-bold text-[10px]">G</div>}
-                        {mounted ? t('continue_google') : 'Continue with Google'}
-                    </Button>
-
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center px-4">
-                            <Separator />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card/50 px-2 text-muted-foreground backdrop-blur-sm">{mounted ? t('or_continue_with') : 'Or continue with'}</span>
-                        </div>
-                    </div>
-
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="name">{mounted ? t('full_name') : 'Full Name'}</Label>
@@ -126,6 +108,22 @@ export default function RegisterPage() {
                                 className="h-11 bg-background/50"
                                 required
                             />
+                            {showPasswordHints && (
+                                <ul className="text-xs space-y-1 mt-1">
+                                    <li className={passwordChecks.length ? "text-green-500" : "text-muted-foreground"}>
+                                        {passwordChecks.length ? "✓" : "○"} At least 8 characters
+                                    </li>
+                                    <li className={passwordChecks.uppercase ? "text-green-500" : "text-muted-foreground"}>
+                                        {passwordChecks.uppercase ? "✓" : "○"} One uppercase letter
+                                    </li>
+                                    <li className={passwordChecks.number ? "text-green-500" : "text-muted-foreground"}>
+                                        {passwordChecks.number ? "✓" : "○"} One number
+                                    </li>
+                                    <li className={passwordChecks.special ? "text-green-500" : "text-muted-foreground"}>
+                                        {passwordChecks.special ? "✓" : "○"} One special character
+                                    </li>
+                                </ul>
+                            )}
                         </div>
                         {error && <p className="text-sm text-destructive font-medium">{error}</p>}
                         <Button type="submit" className="w-full h-11 font-semibold" disabled={isLoading}>

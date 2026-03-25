@@ -9,10 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { USAFlag } from "@/app/components/Flags"; // Using existing USA flag as Google placeholder or just a simple icon
 
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 
 function LoginForm() {
     const { t } = useTranslation();
@@ -23,59 +21,72 @@ function LoginForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState("");
     const [mounted, setMounted] = useState(false);
+    const [isSigningIn, setIsSigningIn] = useState(false);
 
     useEffect(() => {
         setMounted(true);
         const errorParam = searchParams.get("error");
         if (errorParam === "AccessDenied") {
-            setError("Access Denied: You do not have permission to sign in.");
+            setError("Invalid email or password");
         }
     }, [searchParams]);
 
     useEffect(() => {
-        console.log('Session status:', session?.status);
-        console.log('Session data:', session?.data);
-
-        if (session?.status === "authenticated") {
-            console.log('User authenticated, redirecting to dashboard...');
-            router.push("/");
+        if (session.status === "authenticated") {
+            router.replace("/");
             router.refresh();
         }
-    }, [session?.status, session?.data, router]);
+    }, [session.status, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isLoading || isSigningIn) {
+            return;
+        }
+
         setIsLoading(true);
+        setIsSigningIn(false);
         setError("");
 
         try {
             const callback = await signIn("credentials", {
                 email,
                 password,
+                rememberMe: rememberMe.toString(),
                 redirect: false
             });
 
             if (callback?.error) {
                 setError("Invalid email or password");
             } else if (callback?.ok) {
-                router.push("/");
-                router.refresh();
+                setIsSigningIn(true);
+            } else {
+                setError("Something went wrong");
             }
-        } catch (err) {
+        } catch {
             setError("Something went wrong");
         } finally {
-            setIsLoading(false);
+            if (!isSigningIn) {
+                setIsLoading(false);
+            }
         }
     };
 
-    const handleGoogleSignIn = () => {
-        setIsLoading(true);
-        signIn("google", {
-            callbackUrl: "/"
-        });
-    };
+    useEffect(() => {
+        if (session.status === "unauthenticated" && isSigningIn) {
+            setIsSigningIn(false);
+            setIsLoading(false);
+            setError("Something went wrong");
+        }
+
+        if (session.status === "authenticated" && isSigningIn) {
+            setIsLoading(false);
+            setIsSigningIn(false);
+        }
+    }, [isSigningIn, session.status]);
 
     return (
         <Card className="w-full max-w-md shadow-2xl border-primary/20 bg-card/50 backdrop-blur-sm">
@@ -88,27 +99,6 @@ function LoginForm() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <Button
-                    variant="outline"
-                    className="w-full h-11 border-primary/20 hover:bg-primary/5 transition-all duration-300"
-                    onClick={handleGoogleSignIn}
-                    disabled={isLoading}
-                >
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <div className="mr-2 h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center font-bold text-[10px]">G</div>}
-                    {mounted ? t('continue_google') : 'Continue with Google'}
-                </Button>
-
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center px-4">
-                        <Separator />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card/50 px-2 text-muted-foreground backdrop-blur-sm">
-                            {mounted ? t('or_continue_with') : 'Or continue with'}
-                        </span>
-                    </div>
-                </div>
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="email">{mounted ? t('email_label') : 'Email'}</Label>
@@ -137,6 +127,19 @@ function LoginForm() {
                             required
                             autoComplete="current-password"
                         />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <input
+                            id="rememberMe"
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            disabled={isLoading}
+                            className="h-4 w-4 rounded border-primary/30 accent-primary cursor-pointer"
+                        />
+                        <Label htmlFor="rememberMe" className="cursor-pointer font-normal">
+                            Remember me
+                        </Label>
                     </div>
                     {error && <p className="text-sm text-destructive font-medium">{error}</p>}
                     <Button type="submit" className="w-full h-11 font-semibold" disabled={isLoading}>

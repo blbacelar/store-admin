@@ -23,8 +23,16 @@ export async function POST(request: Request) {
         }
 
         // Validate password strength
-        if (password.length < 8) {
-            return new NextResponse("Password must be at least 8 characters", { status: 400 });
+        const passwordErrors: string[] = [];
+        if (password.length < 8) passwordErrors.push("at least 8 characters");
+        if (!/[A-Z]/.test(password)) passwordErrors.push("one uppercase letter");
+        if (!/[0-9]/.test(password)) passwordErrors.push("one number");
+        if (!/[^A-Za-z0-9]/.test(password)) passwordErrors.push("one special character");
+        if (passwordErrors.length > 0) {
+            return new NextResponse(
+                `Password must contain: ${passwordErrors.join(", ")}`,
+                { status: 400 }
+            );
         }
 
         // Check if email is allowed
