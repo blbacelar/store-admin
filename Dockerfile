@@ -82,4 +82,4 @@ COPY --from=base /app/prisma ./prisma
 
 EXPOSE 3005
 
-CMD ["sh", "-c", "node dist-server/server.js 2>&1; echo '=== SERVER EXITED, sleeping for debug ==='; sleep infinity"]
+CMD ["npm", "run", "server"]

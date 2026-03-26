@@ -27,16 +27,17 @@ export default function NavBar() {
     return (
         <nav className="border-b bg-card">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
-                    <div className="flex items-center gap-4">
+                <div className="flex min-h-16 flex-col gap-3 py-3 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:py-0">
+                    <div className="flex min-w-0 items-center gap-4">
                         <BranchSelector />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
                         <ThemeToggle />
                         <LanguageToggle />
                         <Button
                             variant="outline"
                             size="sm"
+                            className="shrink-0"
                             onClick={() => signOut({ callbackUrl: '/login' })}
                         >
                             <LogOut className="mr-2 h-4 w-4" />

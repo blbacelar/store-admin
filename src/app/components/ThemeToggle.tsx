@@ -31,7 +31,7 @@ export default function ThemeToggle() {
             variant="outline"
             size="icon"
             onClick={toggleTheme}
-            className="fixed top-4 right-4 z-50 h-10 w-10"
+            className="h-10 w-10 shrink-0"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
             {theme === 'dark' ? (

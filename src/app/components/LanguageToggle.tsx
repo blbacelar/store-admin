@@ -24,7 +24,7 @@ export default function LanguageToggle() {
     };
 
     return (
-        <div className="fixed top-4 right-16 z-50 flex bg-muted/50 backdrop-blur-sm p-1 rounded-full border border-border shadow-sm">
+        <div className="flex shrink-0 bg-muted/50 backdrop-blur-sm p-1 rounded-full border border-border shadow-sm">
             <button
                 onClick={() => i18n.changeLanguage('pt')}
                 className={`w-9 h-9 flex items-center justify-center rounded-full transition-all ${getButtonClass('pt')}`}
