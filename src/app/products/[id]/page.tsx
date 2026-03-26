@@ -108,15 +108,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const checkStores = async () => {
         try {
             const res = await fetch('/api/stores');
+            if (!res.ok) return;
             const data = await res.json();
 
             if (Array.isArray(data) && data.length > 0) {
                 setActiveStore(data[0]);
                 // Don't fetch categories here - wait for product to load with branchId
                 fetchBranches(data[0].id);
-            } else {
-                router.push('/setup-store');
             }
+            // Do not redirect to /setup-store here — the product detail page has no
+            // store-creation flow, and a transient API failure would cause a bad redirect.
         } catch (error) {
             console.error('Failed to check stores', error);
         }

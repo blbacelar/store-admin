@@ -119,7 +119,6 @@ export default function Home() {
       });
       if (res.ok) {
         const newProduct = await res.json();
-        // Redirect to product detail page to assign category/branch
         router.push(`/products/${newProduct.id}`);
         toast.success(t('product_saved') || 'Product saved successfully');
       } else {
