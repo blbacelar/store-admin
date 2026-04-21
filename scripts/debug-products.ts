@@ -1,4 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+
 const prisma = new PrismaClient();
 
 async function inspect() {
@@ -9,12 +10,11 @@ async function inspect() {
         });
 
         console.log(`Found ${products.length} sample products.`);
-        products.forEach(p => {
-            console.log(`ID: ${p.id}, Name: ${p.name}, StoreId: ${p.storeId} (Type: ${typeof p.storeId})`);
+        products.forEach((product) => {
+            console.log(`ID: ${product.id}, Name: ${product.name}, StoreId: ${product.storeId} (Type: ${typeof product.storeId})`);
         });
-
-    } catch (e) {
-        console.error('Inspection Error:', e);
+    } catch (error) {
+        console.error('Inspection Error:', error);
     } finally {
         await prisma.$disconnect();
     }

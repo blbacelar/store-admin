@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 import { logger } from './logger';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3002';
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || `http://127.0.0.1:${process.env.PORT || '3005'}`;
 const socket = io(SOCKET_URL, {
     autoConnect: false,
 });

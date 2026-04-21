@@ -1,11 +1,11 @@
-const { MongoClient, ObjectId } = require('mongodb');
-require('dotenv').config({ path: '.env' });
+import dotenv from 'dotenv';
+import { MongoClient, ObjectId } from 'mongodb';
 
-// Branch IDs from .env.local
+dotenv.config({ path: '.env' });
+
 const BRAZIL_BRANCH_ID = '698aa7befb290759f8791c0d';
 const USA_BRANCH_ID = '698aa7c2fb290759f8791c0e';
 
-// Portuguese category names (to be assigned to Brazil branch)
 const portugueseCategories = [
     'Financeiro & Passatempo',
     'Papelaria & Escola',
@@ -17,7 +17,6 @@ const portugueseCategories = [
     'RealTime'
 ];
 
-// English category names (to be assigned to USA branch)
 const englishCategories = [
     'Stem Toys',
     'Home & Comfort',
@@ -28,7 +27,13 @@ const englishCategories = [
 ];
 
 async function migrateCategories() {
-    const client = new MongoClient(process.env.DATABASE_URL);
+    const databaseUrl = process.env.DATABASE_URL;
+
+    if (!databaseUrl) {
+        throw new Error('DATABASE_URL is not configured.');
+    }
+
+    const client = new MongoClient(databaseUrl);
 
     try {
         console.log('Starting category migration...\n');
@@ -39,7 +44,6 @@ async function migrateCategories() {
         const db = client.db();
         const categoriesCollection = db.collection('categories');
 
-        // Get all categories
         const allCategories = await categoriesCollection.find({}).toArray();
         console.log(`Found ${allCategories.length} categories\n`);
 
@@ -47,32 +51,26 @@ async function migrateCategories() {
         let skippedCount = 0;
 
         for (const category of allCategories) {
-            // Skip if already has a branch assigned
             if (category.branchId) {
                 console.log(`⏭️  Skipping "${category.name}" - already has branch`);
                 skippedCount++;
                 continue;
             }
 
-            let targetBranchId = null;
+            let targetBranchId: ObjectId | null = null;
 
-            // Check if category name is in Portuguese list
             if (portugueseCategories.includes(category.name)) {
                 targetBranchId = new ObjectId(BRAZIL_BRANCH_ID);
                 console.log(`🇧🇷 Assigning "${category.name}" to Brazil branch`);
-            }
-            // Check if category name is in English list
-            else if (englishCategories.includes(category.name)) {
+            } else if (englishCategories.includes(category.name)) {
                 targetBranchId = new ObjectId(USA_BRANCH_ID);
                 console.log(`🇺🇸 Assigning "${category.name}" to USA branch`);
-            }
-            else {
+            } else {
                 console.log(`⚠️  Unknown category: "${category.name}" - skipping`);
                 skippedCount++;
                 continue;
             }
 
-            // Update category with branchId
             await categoriesCollection.updateOne(
                 { _id: category._id },
                 { $set: { branchId: targetBranchId } }
@@ -84,9 +82,8 @@ async function migrateCategories() {
         console.log('\n✅ Migration complete!');
         console.log(`   Updated: ${updatedCount} categories`);
         console.log(`   Skipped: ${skippedCount} categories`);
-
     } catch (error) {
-        console.error('❌ Error during migration:', error.message);
+        console.error('❌ Error during migration:', error instanceof Error ? error.message : String(error));
         process.exit(1);
     } finally {
         await client.close();

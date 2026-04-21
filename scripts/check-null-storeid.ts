@@ -1,4 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+
 const prisma = new PrismaClient();
 
 async function check() {
@@ -6,7 +7,7 @@ async function check() {
     try {
         const count = await prisma.product.count({
             where: {
-                storeId: null
+                storeId: null as any
             }
         });
 
@@ -14,14 +15,13 @@ async function check() {
 
         if (count > 0) {
             const products = await prisma.product.findMany({
-                where: { storeId: null },
+                where: { storeId: null as any },
                 select: { id: true, name: true }
             });
             console.log('Sample IDs:', products.slice(0, 5));
         }
-
-    } catch (e) {
-        console.error('Check Error:', e);
+    } catch (error) {
+        console.error('Check Error:', error);
     } finally {
         await prisma.$disconnect();
     }

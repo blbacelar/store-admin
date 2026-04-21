@@ -3,6 +3,8 @@ import prisma from "@/app/lib/prisma";
 import { requireAuth } from "@/app/lib/apiAuth";
 import { logger } from "@/app/lib/logger";
 
+const DEFAULT_STORE_ID = process.env.DEFAULT_STORE_ID || "6984f69469a68016b608074b";
+
 export async function POST(request: Request) {
     // Check authentication
     const auth = await requireAuth();
@@ -44,11 +46,23 @@ export async function GET() {
     const { userId } = auth;
 
     try {
-        const stores = await prisma.store.findMany({
+        const ownedStores = await prisma.store.findMany({
             where: {
                 userId: userId
             }
         });
+
+        if (!DEFAULT_STORE_ID) {
+            return NextResponse.json(ownedStores);
+        }
+
+        const defaultStore = await prisma.store.findUnique({
+            where: { id: DEFAULT_STORE_ID }
+        });
+
+        const stores = defaultStore && !ownedStores.some((store) => store.id === defaultStore.id)
+            ? [defaultStore, ...ownedStores]
+            : ownedStores;
 
         return NextResponse.json(stores);
     } catch (error) {

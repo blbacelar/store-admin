@@ -110,22 +110,9 @@ Wait a few minutes for the DNS to propagate and the SSL certificate to be issued
 
 ## 7. Update Google Cloud Auth (Required)
 
-Since you changed your domain to `admin.thelittlebigentrepreneur.com`, you must update your Google Cloud Console to allow logins from this new URL.
+This project currently uses NextAuth credentials authentication, so there is no Google OAuth redirect configuration to update for custom domains.
 
-1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2.  Navigate to **APIs & Services** > **Credentials**.
-3.  Click on the **OAuth 2.0 Client ID** you created for this project.
-4.  Update the following fields:
-
-    **Authorized JavaScript origins:**
-    - Add: `https://admin.thelittlebigentrepreneur.com`
-
-    **Authorized redirect URIs:**
-    - Add: `https://admin.thelittlebigentrepreneur.com/api/auth/callback/google`
-
-5.  Click **Save**.
-
-> **Note**: It may take 5-10 minutes for these changes to propagate. If you see a "redirect_uri_mismatch" error immediately, just wait a few minutes and try again.
+When you change the public domain, the important auth update is keeping `NEXTAUTH_URL` aligned with that domain so session callbacks and redirects continue to work correctly.
 
 
 ## 8. Build Issues (Next.js 16 / Turbopack)

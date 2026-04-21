@@ -12,8 +12,6 @@ export async function POST() {
         return auth.response;
     }
 
-    const { userId } = auth;
-
     try {
         if (!DEFAULT_STORE_ID) {
             logger.error('DEFAULT_STORE_ID environment variable not set');
@@ -30,26 +28,8 @@ export async function POST() {
             return NextResponse.json({ error: "Default store not found" }, { status: 404 });
         }
 
-        // Check if user already has access to this store
-        const existingStoreOwnership = await prisma.store.findFirst({
-            where: {
-                id: DEFAULT_STORE_ID,
-                userId: userId
-            }
-        });
-
-        if (existingStoreOwnership) {
-            return NextResponse.json({ message: "User already has access", store: existingStoreOwnership });
-        }
-
-        // Update the store to assign it to this user
-        const updatedStore = await prisma.store.update({
-            where: { id: DEFAULT_STORE_ID },
-            data: { userId: userId }
-        });
-
-        logger.info(`Store ${DEFAULT_STORE_ID} auto-assigned to user ${userId}`);
-        return NextResponse.json({ message: "User assigned to store", store: updatedStore });
+        logger.info(`Default store ${DEFAULT_STORE_ID} returned to authenticated user`);
+        return NextResponse.json({ message: "Default store available", store: defaultStore });
     } catch (error) {
         logger.error("AUTO_ASSIGN_STORE_ERROR", error);
         return NextResponse.json({ error: "Internal Error" }, { status: 500 });

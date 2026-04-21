@@ -1,4 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+
 const prisma = new PrismaClient();
 
 const TARGET_STORE_ID = '6984f69469a68016b608074b';
@@ -6,12 +7,11 @@ const TARGET_STORE_ID = '6984f69469a68016b608074b';
 async function migrate() {
     console.log('Starting direct migration...');
     try {
-        // Direct updateMany
         const result = await prisma.product.updateMany({
             where: {
                 OR: [
                     { storeId: { not: TARGET_STORE_ID } },
-                    { storeId: { isSet: false } }
+                    { storeId: { isSet: false } as any }
                 ]
             },
             data: {
@@ -20,8 +20,8 @@ async function migrate() {
         });
 
         console.log(`Updated ${result.count} products.`);
-    } catch (e) {
-        console.error('Migration error:', e);
+    } catch (error) {
+        console.error('Migration error:', error);
     } finally {
         await prisma.$disconnect();
     }
