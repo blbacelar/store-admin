@@ -6,6 +6,10 @@ It is used to feed product data into https://www.thelittlebigentrepreneur.com/, 
 
 This is the project I would present as a portfolio piece for full-stack product engineering: it includes backend APIs, authentication, database modeling, scraping logic, defensive validation, deployment setup, and a polished admin UI.
 
+## Demo
+
+See the portfolio demo walkthrough in [docs/demo/README.md](docs/demo/README.md) for screenshots, a recorded product tour, and a concise explanation of the main admin flows.
+
 ## What The Project Does
 
 - Scrapes product data from supported Amazon URLs and short links.
